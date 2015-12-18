@@ -23,7 +23,6 @@
     resource_key="name"
     payload='{"name":"0","routingProtocol":["BGP"]}'
 
-
 - name: Adding IKE Peers
   delegate_to: localhost
   bigip_config:
@@ -45,44 +44,6 @@
         "version":["v1"]}'
 
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
-
-
-# However leaving examples of adding one at a time for illustration purposes
-# - name: Adding IKE Peer 1
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/ipsec/ike-peer'
-#     resource_key="name"
-#     payload='{"name":"aws_vpn_{{ connection }}_peer_1",
-#         "lifetime":"480",
-#         "phase1AuthMethod":"pre-shared-key",
-#         "phase1EncryptAlgorithm":"aes128",
-#         "presharedKey":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].ike.pre_shared_key }}",
-#         "remoteAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_outside_address.ip_address }}",
-#         "version":["v1"]}'
-
-
-# - name: Adding IKE Peer 2
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/ipsec/ike-peer'
-#     resource_key="name"
-#     payload='{"name":"aws_vpn_{{ connection }}_peer_2",
-#         "lifetime":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].ike.lifetime }}",
-#         "phase1AuthMethod":"pre-shared-key",
-#         "phase1EncryptAlgorithm":"aes128",
-#         "presharedKey":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].ike.pre_shared_key }}",
-#         "remoteAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_outside_address.ip_address }}",
-#         "version":["v1"]}'
-
 
 - name: Adding AWS IPSEC POLICY
   delegate_to: localhost
@@ -119,37 +80,6 @@
         "ipsecPolicy":"/Common/AWS_IPSEC_Interface_Policy"}'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
 
-# However leaving examples of adding one at a time for illustration purposes
-# - name: Adding Traffic Selector for VPN CONN TUNNEL 1
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/ipsec/traffic-selector'
-#     resource_key="name"
-#     payload='{"name":"aws_{{ connection }}_tun_1_selector",
-#         "sourceAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.network_cidr) }}",
-#         "destinationAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.network_cidr) }}",
-#         "ipsecPolicy":"/Common/AWS_IPSEC_Interface_Policy"}'
-
-
-# - name: Adding Traffic Selector for VPN CONN TUNNEL 2
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/ipsec/traffic-selector'
-#     resource_key="name"
-#     payload='{"name":"aws_conn_{{ connection }}_tun_2_selector",
-#         "sourceAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.network_cidr) }}",
-#         "destinationAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.network_cidr) }}",
-#         "ipsecPolicy":"/Common/AWS_IPSEC_Interface_Policy"}'
-
-
 - name: Adding IPSEC PROFILE TO CONN TUNNEL
   delegate_to: localhost
   bigip_config:
@@ -163,33 +93,6 @@
         "defaultsFrom":"/Common/ipsec",
         "trafficSelector":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_selector"}'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
-
-# - name: Adding IPSEC PROFILE FOR CONN TUNNEL 1
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/tunnels/ipsec'
-#     resource_key="name"
-#     payload='{"name":"aws_{{ connection }}_tun_1_profile",
-#         "defaultsFrom":"/Common/ipsec",
-#         "trafficSelector":"/Common/aws_{{ connection }}_tun_1_selector"}'
-
-
-# - name: Adding IPSEC PROFILE FOR CONN TUNNEL 2
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/tunnels/ipsec'
-#     resource_key="name"
-#     payload='{"name":"aws_{{ connection }}_tun_2_profile",
-#         "defaultsFrom":"/Common/ipsec",
-#         "trafficSelector":"/Common/aws_{{ connection }}_tun_2_selector"}'
 
 - name: Adding tunnels for VPN Connections
   delegate_to: localhost
@@ -207,38 +110,6 @@
         "profile":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_profile"}'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
 
-# However leaving examples of adding one Tunnel at a time for illustration purposes
-# - name: Adding TUNNEL 1 for VPN CONN
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/tunnels/tunnel'
-#     resource_key="name"
-#     payload='{"name":"aws_{{ connection }}_tun_1",
-#         "localAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].customer_gateway.tunnel_outside_address.ip_address }}",
-#         "remoteAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_outside_address.ip_address }}",
-#         "mtu":"1436",
-#         "profile":"/Common/aws_{{ connection }}_tun_1_profile"}'
-
-
-# - name: Adding TUNNEL 2 for VPN CONN
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/tunnels/tunnel'
-#     resource_key="name"
-#     payload='{"name":"aws_{{ connection }}_tun_2",
-#         "localAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].customer_gateway.tunnel_outside_address.ip_address }}",
-#         "remoteAddress":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_outside_address.ip_address }}",
-#         "mtu":"1436",
-#         "profile":"/Common/aws_{{ connection }}_tun_2_profile"}'
-
 - name: Adding SELF-IPs to TUNNELS
   delegate_to: localhost
   bigip_config:
@@ -254,37 +125,6 @@
         "allowService":"all",
         "vlan":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}"}'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
-
-# However leaving examples of adding one SELF-IP at a time for illustration purposes
-# - name: Adding VPC CONN TUNNEL 1 SELF-IP
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/self'
-#     resource_key="name"
-#     payload='{"name":"{{ customer_gateway.tunnel_inside_address.ip_address }}",
-#         "address":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].customer_gateway.tunnel_inside_address.ip_address }}/{{ customer_gateway_config.vpn_connection.ipsec_tunnel[0].customer_gateway.tunnel_inside_address.network_cidr }}",
-#         "trafficGroup":"/Common/traffic-group-local-only",
-#         "allowService":"all",
-#         "vlan":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}"}'
-
-# - name: Adding VPC CONN TUNNEL 2 SELF-IP
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ ansible_ssh_host }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     collection_path='mgmt/tm/net/self'
-#     resource_key="name"
-#     payload='{"name":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].customer_gateway.tunnel_inside_address.ip_address }}",
-#         "address":"{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].customer_gateway.tunnel_inside_address.ip_address }}/{{ customer_gateway_config.vpn_connection.ipsec_tunnel[1].customer_gateway.tunnel_inside_address.network_cidr }}",
-#         "trafficGroup":"/Common/traffic-group-local-only",
-#         "allowService":"all",
-#         "vlan":"/Common/aws_{{ connection }}_tun_2"}'
 
 - name: Create VPN Connection Monitoring Pool
   delegate_to: localhost
