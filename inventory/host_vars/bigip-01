@@ -1,0 +1,243 @@
+---
+
+SETTINGS:
+    bigip: "10.11.50.21"
+    hostname: "bigip-vpn-01.mgmt.example.com"
+    reg_key: "Q9431-75446-88634-52606-1281388"
+    # Misc EULA Variables #
+    email : "icontrol@example.com"
+    firstName: "example"
+    lastName: "iControl"
+    companyName: "F5"
+    phone: "2062725555"
+    jobTitle: "demo"
+    address: "111 EXAMPLE ICONTROL RD"
+    city: "Seattle"
+    stateProvince: "WA"
+    postalCode: "98119"
+    country: "United States"
+    # License Variables #
+    reg_keys: []
+    reg_keys_string: "Q9431-75446-88634-52606-1281388"
+    license_string: ""
+    eula_string: ""
+    local_license_file_name: ""
+    local_eula_file_name: ""
+    license_server_hostname: "authem.f5net.com"
+    # DEVICE CERTIFICATE VARIABLES: #
+    cert_email: "cert-admin@example.com"
+    cert_country: "US"
+    cert_state: "WA"
+    cert_locality: "Seattle"
+    cert_organization: "Demo"
+    cert_division: "Demo"
+    cert_expire: 3650
+
+
+SYSTEM:
+
+
+    PROVISIONING:
+        # Set Provision Level"
+        ltm: "nominal"
+
+    DB_KEYS:
+        setup.run: "false"
+        ui.system.preferences.recordsperscreen: 50
+        config.allow.rfc3927: "enable"
+        ipsec.if.checkpolicy: "disable"
+
+    MCPD:
+        audit: "enable"
+        loglevel: "notice"
+
+
+
+    ##### HTTP VARIABLES #####
+
+
+    ##### NTP VARIABLES #####
+    NTP:
+        ntp_servers: "10.11.26.1, 10.11.26.2"
+        timezone: "America/Los_Angeles"
+
+
+    ##### DNS VARIABLES #####
+    DNS:
+        dns_servers: "10.11.26.1 , 10.11.26.2"
+
+    ##### SSH VARIABLES #####
+    SSH:
+        #[[allow, banner, banner_text, inactivity_timeout, include, login, loglevel]]
+        allow: "{ALL}"
+        banner: "false"
+        banner_text: ""
+        inactivity_timeout: "3600"
+        login: "true"
+        loglevel: "VERBOSE"
+        include: "PasswordAuthentication yes"
+
+
+######  BEGIN NETWORK CONFIG   #####
+NETWORK:
+
+    MGMT_ROUTES:
+        0.0.0.0:
+            network:        "0.0.0.0"
+            netmask:    "0.0.0.0"
+            cidr:       "0"
+            gw:         "10.11.255.254"
+
+        100.100.200.0:
+            network:        "100.100.200.0"
+            netmask:    "255.255.255.0"
+            cidr:       "0"
+            gw:         "10.11.255.254"
+
+
+    TRUNK:
+    ##### TRUNK VARIABLES  - HARDWARE ONLY #####
+        my_trunk_name:
+            interfaces:         "3.1 , 3.2"
+            lacp_enabled:       "True"
+            # or LACP_TIMEOUT_LONG
+            lacp_timeout:       "LACP_TIMEOUT_SHORT"  
+            # or STATE_DISABLED
+            lacp_active_state:  "STATE_ENABLED"  
+
+
+    ##### VLAN VARIABLES #####
+    VLANS:
+
+        external:
+            tag:                4092
+            # set to trunk_name or interface ex. 1.2 for a VE
+            interfaces:         "1.2"
+            # Leave empty for VE            	
+            tagged:             ""
+            # or STATE_DISABLED         	
+            failsafe:           "STATE_DISABLED"
+            failsafe_timeout:   45
+            mac_masquerade:     ""
+        internal:
+            tag:                4093
+            # to trunk_name or interface ex. 1.1 for a VE
+            interfaces:         "1.1"
+            # Leave empty for VE     	
+            tagged:             ""
+            # or STATE_DISABLED	      	      	    
+            failsafe:           "STATE_DISABLED"
+            failsafe_timeout:   45
+            mac_masquerade:     ""
+
+
+    ##### SELF IP VARIABLES - ARRAY BECAUSE ORDER IS IMPORTANT #####
+    SELF_IPS:
+        # Unique Self IPs
+        -   name:               "10.3.0.2"
+            address:            "10.3.0.2"
+            netmask:            "255.255.0.0"
+            cidr:               "16"
+            vlan:               "internal"
+            unit_id:            0
+            # or STATE_ENABLED
+            floating_state:     "STATE_DISABLED"
+            port_lockdown:      "ALLOW_MODE_DEFAULTS"
+            port_custom_add:    "TCP:179"
+            allow_service:      "default"
+            traffic_group:      "traffic-group-local-only"
+            tag:                "InternalInterfacePrivateIp"
+        -   name:               "10.12.0.57"
+            address:            "10.12.0.57"
+            netmask:            "255.255.0.0"
+            cidr:               "16"
+            vlan:               "external"
+            unit_id:            0
+            # or STATE_ENABLED
+            floating_state:     "STATE_DISABLED"
+            #or ALLOW_MODE_PROTOCOL_PORT FOR CUSTOM PORT STRING  
+            port_lockdown:      "ALLOW_MODE_DEFAULTS"
+            port_custom_add:    "TCP:179,UDP:53"
+            allow_service:      "default"
+            traffic_group:      "traffic-group-local-only"
+            tag:                "ExternalInterfacePrivateIp"
+        -   name:               "208.85.211.57"
+            address:            "208.85.211.57"
+            netmask:            "255.255.255.240"
+            cidr:               "28"
+            vlan:               "external"
+            unit_id:            0
+            # or STATE_ENABLED
+            floating_state:     "STATE_DISABLED"
+            #or ALLOW_MODE_PROTOCOL_PORT FOR CUSTOM PORT STRING
+            port_custom_add:    "TCP:179,UDP:53"
+            port_lockdown:      "ALLOW_MODE_DEFAULTS"
+            allow_service:      
+                                - "tcp:4353"
+                                - "tcp:179"
+            traffic_group:      "traffic-group-local-only"
+        # Floating for HA
+        -   name:               "10.3.0.1"            
+            address:            "10.3.0.1"
+            netmask:            "255.255.0.0"
+            cidr:               "16"
+            vlan:               "internal"
+            unit_id:            1
+            # or STATE_DISABLED
+            floating_state:     "STATE_ENABLED"
+            port_lockdown:      "ALLOW_MODE_DEFAULTS"
+            port_custom_add:    "TCP:179"
+            allow_service:      "default"
+            traffic_group:      "traffic-group-1"
+        -   name:               "10.12.0.56"
+            address:            "10.12.0.56"
+            netmask:            "255.255.0.0"
+            cidr:               "16"
+            vlan:               "external"
+            unit_id:            1
+            # or STATE_DISABLED
+            floating_state:     "STATE_ENABLED"
+            port_lockdown:      "ALLOW_MODE_DEFAULTS"
+            port_custom_add:    "TCP:179"
+            allow_service:      "default"
+            traffic_group:      "traffic-group-1"
+
+
+
+# Static Routes
+    ROUTES:
+        default:
+            network:    "0.0.0.0"
+            netmask:    "0.0.0.0"
+            cidr:       "0"
+            gw:         "10.12.255.254"
+
+###### BEGIN LTM CONFIG ######
+
+##### LTM VARIABLES #####
+TRAFFIC:
+    LTM_GLOBALS:
+        vlan_keyed_conn: "true"
+
+    PROFILES:
+    # Note: The keys used are based on syntax used in bigip.conf or bigpipe output
+        FASTL4:
+            #fastl4_custom:
+            fastl4_short_idle_timeout_60s:
+                idle timeout:       "60"
+            fastl4_dsr_default: 
+                idle timeout:       "60"
+                reset on timeout:   "disable"
+                loose initiation:   "enable"
+                loose close:        "enable"
+            fastl4_reversenpath_default:
+                idle timeout:       "60"
+                reset on timeout:   "disable"
+                loose initiation:   "enable"
+                loose close:        "enable"
+            fastl4_route_friendly:
+                idle timeout:       "30"
+                reset on timeout:   "disable"
+                loose initiation:   "enable"
+                loose close:        "enable"
+       

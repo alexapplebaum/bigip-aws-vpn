@@ -1,0 +1,244 @@
+
+- hosts: bigip-01
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  tasks:
+
+    - name: Load customer_gateway_configuration from XML
+      set_fact:
+          customer_gateway_config: "{{ lookup('file', '../cache/' + env_tag + '/vpn_conn_01_customer_gateway_configuration.xml') | xml_to_dict }}"
+          connection: "conn_1"
+         
+
+- hosts: bigip-02
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  tasks:
+
+    - name: Load customer_gateway_configuration from XML
+      set_fact:
+          customer_gateway_config: "{{ lookup('file', '../cache/' + env_tag + '/vpn_conn_02_customer_gateway_configuration.xml') | xml_to_dict }}"
+          connection: "conn_2"
+
+- hosts: bigips
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  vars_files:
+      - "~/creds.yml"
+      - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
+      - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
+  pre_tasks:
+
+    # - name: debug hosts before set fact
+    #   debug: var=hostvars[inventory_hostname]
+
+      ##### CONVERT DATA FROM DIFFERNT SOURCES TO FIT ROLES #####
+      # ex. massage the variables from static configs to better fit 
+      # roles from github/f5networks/aws-deployments
+    - name: 
+      set_fact: 
+        ansible_ssh_host={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+        ansible_ssh_user={{ ansible_ssh_user }}
+        bigip_rest_user={{ bigip_rest_user }}
+        bigip_rest_password={{ bigip_rest_password }}
+        DeviceName={{ hostvars[inventory_hostname].SETTINGS.hostname }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+        ExternalInterfacePublicIp="Not Used"
+        RegKey="{{hostvars[inventory_hostname].SETTINGS.reg_keys_string}}"
+        license_server="{{hostvars[inventory_hostname].SETTINGS.license_server_hostname}}"
+        modules="{{hostvars[inventory_hostname].SYSTEM.PROVISIONING.keys() }}"
+        db_keys="{{hostvars[inventory_hostname].SYSTEM.DB_KEYS}}"
+        vlans="{{hostvars[inventory_hostname].NETWORK.VLANS}}"
+        self_ips="{{hostvars[inventory_hostname].NETWORK.SELF_IPS}}"
+        routes="{{hostvars[inventory_hostname].NETWORK.ROUTES}}"
+
+    - name: set ExternalInterfacePrivateIp
+      set_fact: 
+        ExternalInterfacePrivateIp={{ item.address }}
+      with_items: hostvars[inventory_hostname].NETWORK.SELF_IPS 
+      when: item.tag is defined and item.tag == "ExternalInterfacePrivateIp"
+
+    - name: set InternalInterfacePrivateIp
+      set_fact: 
+        InternalInterfacePrivateIp={{ item.address }}
+        InternalNetwork={{ item.address | ipsubnet(item.cidr) }}
+      with_items: hostvars[inventory_hostname].NETWORK.SELF_IPS 
+      when: item.tag is defined and item.tag == "InternalInterfacePrivateIp"
+
+    - name: debug hosts after set fact
+      debug: var=hostvars[inventory_hostname]
+
+    # - name: debug db_keys
+    #   debug: var=hostvars[inventory_hostname].SYSTEM.DB_KEYS
+
+    # - name: debug db_keys from variable
+    #   debug: var=item
+    #   with_dict: db_keys
+
+- hosts: bigips
+  gather_facts: False
+  roles:
+    # adds users via tmsh
+    - bigip_base
+    # starting with 11.6, AWS defaults to admin & tmsh as shell so need different role
+    # - bigip_base_aws
+
+- hosts: bigips
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  roles:
+    # licenses bigip
+    - bigip_license
+    # provisions system globals like ntp, dns, snmp, syslog, db keys
+    - bigip_system
+    # sets vlans, self-ips, routes
+    - bigip_network
+
+
+############## CLUSTER DEVICES #############
+
+- hosts: bigip-cluster-names
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-cluster-names']
+
+    - name: debug groups
+      debug: var=groups
+
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  connection: local
+  vars:
+    env_tag: dev_west_2
+  tasks:
+
+      #- name: debug hosts
+      #  debug: var=hostvars[inventory_hostname]
+
+      # Difficult to selectively grab/loop through variables and construct string together
+      # in play framework itself. Easiest way is through a template.
+
+      - name: Store peers information
+        template: src=../roles/bigip_cluster/templates/cluster_peer_info.cfg.j2 dest=../cache/{{ env_tag }}/{{inventory_hostname}}_peer_info.yml
+        delegate_to: localhost
+
+# # Add peer variables to host from template output above
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars:
+    env_tag: dev_west_2
+  vars_files:
+    - [ "../cache/{{ env_tag }}/{{inventory_hostname}}_peer_info.yml" ]
+  roles:
+     # This role configures the device object on each bigip and clusters them
+     - bigip_cluster
+
+######## END CLUSTER DEVICES ############
+
+######## ADD VPN SPECIFIC CONFIG ##########
+
+- hosts: bigip-01
+  gather_facts: no
+  vars:
+    env_tag: dev_west_2
+  roles:
+    - bigip_vpn
+   
+- hosts: bigip-02
+  gather_facts: no
+  vars:
+    env_tag: dev_west_2
+  pre_tasks:
+    - name: pause to allow time to sync shared vpn config elements
+      pause: seconds=20
+  roles:
+    - bigip_vpn
+
+### MISC SHARED CONFIG
+
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars:
+    env_tag: dev_west_2
+  tasks:
+
+    - name: Adding Traffic Group 2 To Keep BIG-IP-1 ACTIVE
+      delegate_to: localhost
+      bigip_config:
+        state=present
+        host={{ ansible_ssh_host }}
+        user={{ bigip_rest_user }}
+        password={{ bigip_rest_password }}
+        collection_path='mgmt/tm/cm/traffic-group'
+        resource_key="name"
+        payload='{
+                  "name":"traffic-group-2",
+                  "autoFailbackEnabled":"true",
+                  "haOrder":[
+                        "{{hostvars['bigip-01'].DeviceName}}",
+                        "{{hostvars['bigip-02'].DeviceName}}"
+                  ]
+                  }'
+
+
+    - name: Adding Traffic Group 3 To Keep BIG-IP-2 ACTIVE
+      delegate_to: localhost
+      bigip_config:
+        state=present
+        host={{ ansible_ssh_host }}
+        user={{ bigip_rest_user }}
+        password={{ bigip_rest_password }}
+        collection_path='mgmt/tm/cm/traffic-group'
+        resource_key="name"
+        payload='{
+                  "name":"traffic-group-3",
+                  "autoFailbackEnabled":"true",
+                  "haOrder":[
+                        "{{hostvars['bigip-02'].DeviceName}}",
+                        "{{hostvars['bigip-01'].DeviceName}}"
+                  ]
+                  }'
+
+    # OPTIONAL VIRTUAL FOR TESTING
+    - name: Adding Forwarding Virtual
+      delegate_to: localhost
+      bigip_config:
+        state=present
+        host={{ ansible_ssh_host }}
+        user={{ bigip_rest_user }}
+        password={{ bigip_rest_password }}
+        collection_path='mgmt/tm/ltm/virtual'
+        resource_key="name"
+        payload='{
+                  "name":"vs_outbound",
+                  "destination":"/Common/0.0.0.0:0",
+                  "mask":"any",
+                  "ipProtocol":"any",
+                  "translateAddress":"disabled",
+                  "translatePort":"disabled",
+                  "sourceAddressTranslation":{"type":"none"},
+                  "profiles":[{"name":"fastL4-route-friendly","context":"all"}],
+                  "ipForward":true
+                  }'
+
+
+
+
+

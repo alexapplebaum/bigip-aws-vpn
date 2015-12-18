@@ -1,0 +1,21 @@
+---
+## Some initial setup for big ip once we can login.  We need a user for rest calls.  We may also want the default shell
+## to be bash, rather than tmsh.  The latter is difficult to use ansible...
+
+# We specifically us the bigip_facts library because it does some checking
+#   to seeif bigip is available.  Rather than 
+
+- include: add_rest_user.yml
+- include: modify_admin.yml
+
+# - name: Wait for BIG-IP to be available
+#   #local_action: bigip_facts include=system_info
+#   bigip_facts:  
+#        include=system_info
+#        server={{ ansible_ssh_host }}
+#        user={{ bigip_rest_user }}
+#        password={{ bigip_rest_password }}
+#        validate_certs=no
+#   delegate_to: localhost
+#   register: result
+#   until: result.ansible_facts.system_info.product_information.product_version is defined

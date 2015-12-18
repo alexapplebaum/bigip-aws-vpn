@@ -1,0 +1,183 @@
+---
+# ----------------------------------------------------------------------
+# Configure basic network services that are the same across all devices.
+# ----------------------------------------------------------------------
+
+
+# Example of setting database variables
+#  Here we use a loop to retry until this first attempt to 
+#  provision using REST completes. This is our first REST call
+#  so we want to be sure the device is ready.
+- name: Disabling Setup Utility in GUI
+  delegate_to: localhost
+  bigip_config: 
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"setup.run", "value":"false"}'
+    collection_path='mgmt/tm/sys/db'
+    resource_key="name"
+  register: result
+#  until: result|changed
+#  retries: 5
+
+- name: Disabling dhcp due to clustering
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{ "value":"disable" }'
+    collection_path='mgmt/tm/sys/db/dhclient.mgmt'
+
+- name: Configure Misc DB Keys
+  delegate_to: localhost
+  bigip_config: 
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"{{item.key}}", "value":"{{item.value}}"}'
+    collection_path='mgmt/tm/sys/db'
+    resource_key="name"
+  with_dict: db_keys 
+
+
+- name: Configuring hostname
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"hostname":"{{DeviceName}}"}'
+    collection_path='mgmt/tm/sys/global-settings'
+
+
+# We need NTP, we do not get this from Amazon
+# TODO: take in an array for pool members
+# pool members are the same for each device if they are in the same region
+- name: Configuring NTP servers
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
+    collection_path='mgmt/tm/sys/ntp'
+
+# AWS gives us DNS via DHCP
+# - name: Configuring DNS servers
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ ansible_ssh_host }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_password }}
+#     payload='{"nameServers":["4.2.2.1"]}'
+#     collection_path='mgmt/tm/sys/dns'
+#   #Really just need to add condition so only runs in certain environments
+#   when: target_env != "AWS"
+
+# TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
+- name: Configuring syslog
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"include":"destination loghost { udp( 10.0.3.32 port (514));};"}'
+    collection_path='mgmt/tm/sys/syslog'
+
+# Amazon provides this functionality with their ACLs, but 
+#  peforming this lockdown within TMOS creates allows better portability across cloud providers
+- name: Configuring HTTP mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/httpd'
+
+- name: Configuring SSH mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/sshd'
+
+- name: Configuring SNMP access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"allowedAddresses":[ "ALL" ]}'
+    collection_path='mgmt/tm/sys/snmp'
+
+# Configure some global traffic profiles that can be shared by all tenants 
+
+- name: Configuring FastL4 profiles ... fastL4-route-friendly
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"fastL4-route-friendly","resetOnTimeout":"disabled","looseInitialization":"enabled","looseClose":"enabled"}'
+    collection_path='mgmt/tm/ltm/profile/fastl4'
+    resource_key="name"
+
+#Create optmized SSL profiles with nagle and delayed-ack disabled
+#Bug 325280 - RFE: Implement auto-nagle / auto-delayed-ack for tcp profile. (Formerly CR 131876)
+
+- name: Configuring TCP profiles ... ssl-wan-optimized
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"tcp-ssl-wan-optimized", "defaultsFrom":"/Common/tcp-wan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
+    collection_path='mgmt/tm/ltm/profile/tcp'
+    resource_key="name"
+
+- name: Configuring TCP profiles ... ssl-lan-optimized
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"tcp-ssl-lan-optimized", "defaultsFrom":"/Common/tcp-lan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
+    collection_path='mgmt/tm/ltm/profile/tcp'
+    resource_key="name"
+
+# Provision the modules associated with this BIG-IP host
+#  see variables configured in ./roles/inventory_manager/defaults
+#  the 'modules' variable is unique to the ansible host group, i.e. bigips or gtms
+#  why the wait: avoid race conditions that can occur between module provisioning
+#  why this ansible formatting: we do this instead of a with_items + include statement do to an ansible limitation
+#  https://groups.google.com/forum/#!topic/ansible-project/WAuemHF9DwM
+
+- include: provision_module.yml module="ltm"
+  when: "'ltm' in {{ modules }}"
+
+- include: provision_module.yml module="gtm"
+  when: "'gtm' in {{ modules }}"
+
+- include: provision_module.yml module="asm"
+  when: "'asm' in {{ modules }}"
+
+- include: provision_module.yml module="avr"
+  when: "'avr' in {{ modules }}"

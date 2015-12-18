@@ -1,0 +1,11 @@
+---
+
+license_connection: icontrol
+license_server: authem.f5net.com
+wsdl: "{{install_path}} + /roles/bigip_license/files/authem.f5net.com-f5wsdl-w-https.xml"
+
+
+# Contains default values for common BIG-IP related settings
+dfl_bigip:
+    web_user: "admin"
+    web_pass: "admin"
