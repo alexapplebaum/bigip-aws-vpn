@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:impl="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService-impl" xmlns:intf="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" xmlns:tns1="urn:com.f5.license.v5b" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><types><schema targetNamespace="urn:com.f5.license.v5b" xmlns="http://www.w3.org/2001/XMLSchema"><complexType name="LicenseTransaction"><sequence><element name="license" nillable="true" type="xsd:string"/><element name="eula" nillable="true" type="xsd:string"/><element name="state" nillable="true" type="tns1:TransactionState"/><element name="fault" nillable="true" type="tns1:LicensingFault"/></sequence></complexType><simpleType name="TransactionState"><restriction base="xsd:string"><enumeration value="LICENSE_RETURNED"/><enumeration value="EULA_REQUIRED"/><enumeration value="EMAIL_REQUIRED"/><enumeration value="CONTACT_INFO_REQUIRED"/><enumeration value="FAULT_RETURNED"/></restriction></simpleType><complexType name="LicensingFault"><sequence><element name="faultNumber" type="xsd:int"/><element name="faultText" nillable="true" type="xsd:string"/></sequence></complexType><element name="LicenseTransaction" nillable="true" type="tns1:LicenseTransaction"/></schema></types>
+  <wsdl:message name="getLicenseResponse">
+    <wsdl:part name="return" type="tns1:LicenseTransaction"/>
+  </wsdl:message>
+  <wsdl:message name="pingRequest">
+  </wsdl:message>
+  <wsdl:message name="getLicenseRequest">
+    <wsdl:part name="dossier" type="xsd:string"/>
+    <wsdl:part name="eula" type="xsd:string"/>
+    <wsdl:part name="email" type="xsd:string"/>
+    <wsdl:part name="firstName" type="xsd:string"/>
+    <wsdl:part name="lastName" type="xsd:string"/>
+    <wsdl:part name="companyName" type="xsd:string"/>
+    <wsdl:part name="phone" type="xsd:string"/>
+    <wsdl:part name="jobTitle" type="xsd:string"/>
+    <wsdl:part name="address" type="xsd:string"/>
+    <wsdl:part name="city" type="xsd:string"/>
+    <wsdl:part name="stateProvince" type="xsd:string"/>
+    <wsdl:part name="postalCode" type="xsd:string"/>
+    <wsdl:part name="country" type="xsd:string"/>
+  </wsdl:message>
+  <wsdl:message name="pingResponse">
+    <wsdl:part name="return" type="xsd:string"/>
+  </wsdl:message>
+  <wsdl:portType name="ActivationServiceProxy">
+    <wsdl:operation name="getLicense" parameterOrder="dossier eula email firstName lastName companyName phone jobTitle address city stateProvince postalCode country">
+      <wsdl:input message="intf:getLicenseRequest"/>
+      <wsdl:output message="intf:getLicenseResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="ping">
+      <wsdl:input message="intf:pingRequest"/>
+      <wsdl:output message="intf:pingResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="urn:com.f5.license.v5b.ActivationServiceSoapBinding" type="intf:ActivationServiceProxy">
+    <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="getLicense">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ping">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="ActivationServiceProxyService">
+    <wsdl:port binding="intf:urn:com.f5.license.v5b.ActivationServiceSoapBinding" name="urn:com.f5.license.v5b.ActivationService">
+      <wsdlsoap:address location="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

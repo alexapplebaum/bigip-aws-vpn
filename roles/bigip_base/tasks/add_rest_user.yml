@@ -1,0 +1,18 @@
+---
+
+- name: Checking if REST user already exists
+  raw: tmsh list auth user {{ bigip_rest_user }}
+  register: list_user 
+  ignore_errors: True
+
+  #Conditionally create a user if not found
+- name: Creating user for REST
+  raw: tmsh create auth user {{ bigip_rest_user }} password '{{ bigip_rest_password }}' partition-access add { all-partitions { role admin } } shell none  
+  when: list_user.stdout | search("was not found")
+
+  #One more time in case of partial runs/saves. 
+- name: Ensuring user has correct permissions
+  raw: tmsh modify auth user {{ bigip_rest_user }} partition-access modify { all-partitions { role admin } } shell none
+
+- name: Saving tmsh config
+  raw: tmsh save sys config

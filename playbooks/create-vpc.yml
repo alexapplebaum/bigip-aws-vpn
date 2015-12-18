@@ -1,0 +1,114 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  vars_files:
+    - "~/creds.yml"
+    - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
+    - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
+  tasks:
+    - name: create vpc
+      ec2_vpc:
+          state: present
+          region: "{{ region }}"
+          cidr_block: "{{ cidr_block }}"
+          resource_tags: "{{ resource_tags }}"
+          subnets: "{{ subnets }}"
+          internet_gateway: "{{ internet_gateway }}"
+          route_tables: "{{ route_tables }}"
+      register: vpc
+      tags:
+          - vpc
+
+    # - name: debug vpc var
+    #   debug: var=vpc
+    #   tags:
+    #       - debug
+    #       - vpc
+
+    - name: create cache directory
+      file: path=../cache/{{env_tag}} state=directory
+
+    - name: Persist variable data to disk in yaml
+      copy: 
+          content: "{{ vpc | to_nice_yaml }}" 
+          dest: ../cache/{{env_tag}}/vpc.yml
+
+    - name: Persist variable data to disk in json
+      copy: 
+          content: "{{ vpc | to_nice_json }}" 
+          dest: ../cache/{{env_tag}}/vpc.json
+
+    - name: Pausing for 15 seconds for vpc to be registered
+      pause: seconds=15
+      tags:
+          - pause
+
+    - name: Create Security Group
+      ec2_group:
+          state: present
+          name: "{{ security_group_name }}"
+          description: "{{ security_group_description }}"
+          vpc_id: "{{ vpc.vpc_id }}"
+          region: "{{ region }}"
+          rules: "{{ security_group_rules }}"
+      register: security_group
+      tags:
+          - vpc
+
+    # - debug: var=security_group
+    #   tags:
+    #       - debug
+    #       - security_group
+
+    - name: Persist variable data to disk in yaml
+      copy: 
+          content: "{{ security_group | to_nice_yaml }}" 
+          dest: ../cache/{{env_tag}}/vpc_security_group.yml
+
+    - name: Persist variable data to disk in json
+      copy: 
+          content: "{{ security_group | to_nice_json }}" 
+          dest: ../cache/{{env_tag}}/vpc_security_group.json
+
+
+- hosts: zone1-test-host
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  vars_files:
+    - "~/aws_creds.yml"
+    - [ "../cache/{{env_tag}}/vpc.yml" ]
+    - [ "../cache/{{env_tag}}/vpc_security_group.yml" ]
+
+  tasks:
+
+    # - name: debug inventory_host
+    #   debug: var=hostvars[inventory_hostname]
+
+    - name: create a test host
+      ec2:
+          assign_public_ip: yes
+          region: "{{ region }}"
+          key_name: "{{ key_name }}"
+          instance_type: "{{ instance_type }}"
+          image: "{{ base_image['us-west-2'] }}"
+          group_id: "{{ group_id }}"
+          vpc_subnet_id: "{{ item.id }}"
+          wait: yes
+          wait_timeout: 500
+          #count: 1
+          exact_count: 1
+          count_tag:
+              "{ 'Name': '{{inventory_hostname}}', 'Environment': '{{ item.resource_tags.Environment }}', 'Tier': '{{ item.resource_tags.Tier }}', 'Host-Type': 'Ubuntu' }"
+          instance_tags:
+              "{ 'Name': '{{inventory_hostname}}', 'Environment': '{{ item.resource_tags.Environment }}', 'Tier': '{{ item.resource_tags.Tier }}', 'Host-Type': 'Ubuntu' }"
+      with_items: subnets
+      when: item.cidr == "172.16.4.0/24"
+      register: ami_instance
+      tags:
+          - ami_instance
+
+
+

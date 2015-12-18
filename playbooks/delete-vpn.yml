@@ -1,0 +1,72 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    env_tag: dev_west_2
+  vars_files:
+    - "~/aws_creds.yml"
+    - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
+    - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
+    - [ "../cache/{{env_tag}}/vpc.yml" ]
+    - [ "../cache/{{env_tag}}/vpc_security_group.yml" ]
+
+  tasks:
+
+
+    - name: delete vpn connection 1
+      local_action:
+        module: ec2_vpn_connection
+        state: absent
+        # id: {{ id }}
+        region: us-west-2
+        tags: { "Name": "example_vpn_connection_01" }
+      register: vpn_conn_01
+
+    - name: delete vpn connection 2
+      local_action:
+        module: ec2_vpn_connection
+        state: absent
+        # id: {{ id }}
+        region: us-west-2
+        tags: { "Name": "example_vpn_connection_02" }
+      register: vpn_conn_02
+
+    - name: debug vpn_conn_01
+      debug: var=vpn_conn_01
+
+    - name: debug vpn_conn_02
+      debug: var=vpn_conn_02
+
+    - name: delete vpn gateway 
+      ec2_vpn_gateway:
+          region: "{{ region }}"
+          state: absent
+          vpc: "{{ vpc_id }}"
+          #id: "{{ vpn_gw.vpn_gw.id }}"
+          tags: { "Name": "example_vpn_gateway" }
+      register: vpn_gw
+
+    - name: debug vpn_gw
+      debug: var=vpn_gw
+
+    - name: delete customer gateway 01
+      ec2_customer_gateway:
+          region: "{{ region }}"
+          state: absent
+          #id: cgw-ec60bff2
+          tags: { "Name": "example_cgw_01" }
+      register: cgw_01
+
+    - name: delete customer gateway 02
+      ec2_customer_gateway:
+          region: "{{ region }}"
+          state: absent
+          #id: cgw-ec60bff2
+          tags: { "Name": "example_cgw_02" }
+      register: cgw_02
+
+    - name: debug cgw_01
+      debug: var=cgw_01
+
+    - name: debug cgw_02
+      debug: var=cgw_02

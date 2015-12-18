@@ -1,0 +1,67 @@
+---
+cidr_block: 172.16.0.0/16
+resource_tags: { "Environment":"Development", "Name":"Development VPC" }
+subnets:
+          - cidr: 172.16.1.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "Mgmt-AZ1" }
+          - cidr: 172.16.2.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "Public-AZ1" }
+          - cidr: 172.16.3.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "Private-AZ1" }
+          - cidr: 172.16.4.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "Web-AZ1" }
+          - cidr: 172.16.5.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "App-AZ1" }
+          - cidr: 172.16.6.0/24
+            az: us-west-2b
+            resource_tags: { "Environment":"Dev", "Tier" : "DB-AZ1" }
+          - cidr: 172.16.11.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "Mgmt-AZ2" }
+          - cidr: 172.16.12.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "Public-AZ2" }
+          - cidr: 172.16.13.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "Private-AZ2" }
+          - cidr: 172.16.14.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "Web-AZ2" }
+          - cidr: 172.16.15.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "App-AZ2" }
+          - cidr: 172.16.16.0/24
+            az: us-west-2c
+            resource_tags: { "Environment":"Dev", "Tier" : "DB-AZ2" }
+internet_gateway: True
+route_tables:
+          - subnets:
+              - 172.16.1.0/24
+              - 172.16.11.0/24
+            routes:
+              - dest: 0.0.0.0/0
+                gw: igw
+          - subnets:
+              - 172.16.2.0/24
+              - 172.16.3.0/24
+              - 172.16.12.0/24
+              - 172.16.13.0/24
+            routes:
+              - dest: 0.0.0.0/0
+                gw: igw
+          - subnets:
+              - 172.16.4.0/24
+              - 172.16.5.0/24
+              - 172.16.6.0/24
+              - 172.16.14.0/24
+              - 172.16.15.0/24
+              - 172.16.16.0/24
+            routes:
+              - dest: 0.0.0.0/0
+                gw: igw
+

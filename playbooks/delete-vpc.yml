@@ -1,0 +1,39 @@
+- hosts: localhost
+  connection: local
+  vars:
+     env_tag: dev_west_2
+  vars_files:
+     - "~/aws_creds.yml"
+     - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
+     - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
+     - [ "../cache/{{env_tag}}/vpc.yml" ]
+  tasks:
+     - name: Delete Test Host AMI
+       debug: var=region
+
+     - name: Destroy security group
+       ec2_group:
+          state: absent
+          region: "{{ region }}"
+          name: "{{ security_group_name }}"
+          description: "{{ security_group_description }}"
+       register: security_group
+       tags:
+          - security_group
+          - vpc
+
+     - name: Pausing for 15 seconds for security group to be deleted
+       pause: seconds=15
+       tags:
+          - pause
+
+     - name: destroy vpc
+       ec2_vpc:
+          state: absent
+          region: "{{ region }}"
+          vpc_id: "{{ vpc_id }}"
+          resource_tags: "{{ resource_tags }}"
+       register: vpc
+       tags:
+          - vpc
+
