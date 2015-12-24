@@ -449,9 +449,11 @@ For complete example configs of a clustered pair, see the example-configs direct
 	```
 
   	* Configures/Reset on-prem customer gateway BIG-IPs
+
 	```ansible-playbook playbooks/configure-bigips.yml --extra-vars '{"env_tag":"example_vpn"}'```
 	
 	Resets configs to factory default, removes licenses, etc."
+	
 	```ansible-playbook playbooks/reset-bigips.yml```
 
     Output variables will be placed in cache/<env_tag>
