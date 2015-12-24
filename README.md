@@ -435,12 +435,18 @@ For complete example configs of a clustered pair, see the example-configs direct
 3. Run playbooks from within bigip-aws-vpn directory. Set the env_tag for name of your deployment.
 
   	* Create/Delete an example VPC with client ami for testing
-	```ansible-playbook playbooks/create-vpc.yml --extra-vars '{"env_tag":"example_vpn"}'```
-	```ansible-playbook playbooks/delete-vpc.yml --extra-vars '{"env_tag":"example_vpn"}'```
+	```
+	ansible-playbook playbooks/create-vpc.yml --extra-vars '{"env_tag":"example_vpn"}'
+
+	ansible-playbook playbooks/delete-vpc.yml --extra-vars '{"env_tag":"example_vpn"}'
+	```
 
   	* Create/Delete 2 Customer Gateways, one VPN Gateway and 2 VPN Connections
-	```ansible-playbook playbooks/create-vpn.yml --extra-vars '{"env_tag":"example_vpn"}'```
-	```ansible-playbook playbooks/delete-vpn.yml --extra-vars '{"env_tag":"example_vpn"}'```
+	```
+	ansible-playbook playbooks/create-vpn.yml --extra-vars '{"env_tag":"example_vpn"}'
+
+	ansible-playbook playbooks/delete-vpn.yml --extra-vars '{"env_tag":"example_vpn"}'
+	```
 
   	* Configures/Reset on-prem customer gateway BIG-IPs
 	```ansible-playbook playbooks/configure-bigips.yml --extra-vars '{"env_tag":"example_vpn"}'```
