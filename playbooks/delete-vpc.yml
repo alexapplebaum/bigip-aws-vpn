@@ -1,39 +1,45 @@
 - hosts: localhost
   connection: local
-  vars:
-     env_tag: dev_west_2
   vars_files:
-     - "~/aws_creds.yml"
-     - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
-     - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
-     - [ "../cache/{{env_tag}}/vpc.yml" ]
+    - "~/aws_creds.yml"
+    - [ "../cache/{{env_tag}}/vpc.yml" ]
+    - [ "../cache/{{env_tag}}/test_host_id.yml" ]
   tasks:
-     - name: Delete Test Host AMI
-       debug: var=region
 
-     - name: Destroy security group
-       ec2_group:
-          state: absent
+    - name: Delete Test Host AMI
+      ec2:
+          state: 'absent'
           region: "{{ region }}"
-          name: "{{ security_group_name }}"
-          description: "{{ security_group_description }}"
-       register: security_group
-       tags:
-          - security_group
-          - vpc
+          instance_ids: [ "{{ instance_id }}" ]
 
-     - name: Pausing for 15 seconds for security group to be deleted
-       pause: seconds=15
-       tags:
+    - name: Pausing for 60 seconds for host to be deleted to avoid security group dependencies
+      pause: seconds=60
+      tags:
           - pause
 
-     - name: destroy vpc
-       ec2_vpc:
-          state: absent
-          region: "{{ region }}"
-          vpc_id: "{{ vpc_id }}"
-          resource_tags: "{{ resource_tags }}"
-       register: vpc
-       tags:
-          - vpc
+    - name: Destroy security group
+      ec2_group:
+        state: absent
+        region: "{{ region }}"
+        name: "{{ env_tag }}_security_group"
+        description: "{{ env_tag }}_security_group"
+      register: security_group
+      tags:
+        - security_group
+
+    - name: Pausing for 15 seconds for security group to be deleted
+      pause: seconds=15
+      tags:
+        - pause
+
+    - name: Destroy VPC
+      ec2_vpc:
+        state: absent
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        resource_tags: { "Name":"{{env_tag}} VPC", "Environment":"{{env_tag}}",  }
+      register: vpc
+      tags:
+        -  vpc
+
 

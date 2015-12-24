@@ -1,0 +1,7 @@
+{
+    "attach_status": "attached", 
+    "availability_zone": null, 
+    "id": "vgw-baac72a4", 
+    "status": "ok", 
+    "type": "ipsec.1"
+}

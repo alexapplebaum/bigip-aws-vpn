@@ -1,0 +1,849 @@
+#TMSH-VERSION: 12.0.0
+
+cli admin-partitions {
+    update-partition Common
+}
+apm report default-report {
+    report-name sessionReports/sessionSummary
+    user /Common/admin
+}
+auth user admin {
+    description "Admin User"
+    partition-access {
+        all-partitions {
+            role admin
+        }
+    }
+    shell none
+}
+auth user rest-admin {
+    description rest-admin
+    partition-access {
+        all-partitions {
+            role admin
+        }
+    }
+    shell none
+}
+auth user root {
+    description root
+    shell bash
+}
+cm cert /Common/dtca-bundle.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtca-bundle.crt_130413_3
+    checksum SHA1:1289:e29d258051e348388886bdb9ed057df10b93b7c3
+    revision 3
+}
+cm cert /Common/dtca.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtca.crt_130409_3
+    checksum SHA1:1289:e29d258051e348388886bdb9ed057df10b93b7c3
+    revision 3
+}
+cm cert /Common/dtdi.crt {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_d/:Common:dtdi.crt_130405_4
+    checksum SHA1:1249:cf233111778aad52ba781d5e670fb36f6c4324ac
+    revision 4
+}
+cm device /Common/bigip-vpn-01.mgmt.example.com {
+    active-modules { "APM, Base, VE GBB (500 CCU)|OTAUGZB-DLYTUCF|Anti-Virus Checks|Base Endpoint Security Checks|Firewall Checks|Network Access|Secure Virtual Keyboard|APM, Web Application|Machine Certificate Checks|Protected Workspace|Remote Desktop|App Tunnel" "BT-VE, 1G|YRMCYNC-WVCYQNI|IPV6 Gateway|Rate Shaping|Ram Cache|SDN Services, VE|Routing Bundle, VE|DNS-GTM, Base, 1Gbps|ASM, VE|SSL, VE|AFM, VE|Max Compression, VE|Acceleration Manager, VE|DNS Rate Fallback, 100|DNS Licensed Objects, 5|GTM Rate Fallback, 100|DNS Rate Limit, 1000 QPS|GTM Rate, 1000|GTM Licensed Objects, 25|PSM, VE|CGN, BIG-IP VE, AFM ONLY" }
+    base-mac 00:50:56:9a:01:69
+    build 0.0.606
+    chassis-id 421af39c-3d81-b44d-dd3c4d572245
+    configsync-ip 10.12.0.57
+    edition Final
+    hostname bigip-vpn-01.mgmt.example.com
+    management-ip 10.11.50.21
+    marketing-name "BIG-IP Virtual Edition"
+    mirror-ip 10.12.0.57
+    optional-modules { "Advanced Protocols, VE" "App Mode (TMSH Only, No Root/Bash)" "Best, 1 Gbps -3 Gbps Upgrade" "BIG-IP VE, Multicast Routing" "Concurrent Users" "Concurrent Users and Access Sessions, VE" "Crytpo Offload, VE, Tier 2 (1G - 10G)" "DNS and GTM (250 QPS), VE" "External Interface and Network HSM, VE" "IPI Subscription, 1Yr, VE" "IPI Subscription, 3Yr, VE" "PEM URL Filtering, Subscription, 1Yr, 1G, 3G, 5G" "PEM URL Filtering, Subscription, 3Yr, 1G, 3G, 5G" "PEM, ADD-VE, 1G" "PEM, Quota Management, VE" "SSL, Forward Proxy, VE" "SWG Subscription, 1Yr, VE" "SWG Subscription, 3Yr, VE" "URL Filtering Subscription, 1Yr, VE" "URL Filtering Subscription, 3Yr, VE" }
+    platform-id Z100
+    product BIG-IP
+    time-zone America/Los_Angeles
+    unicast-address {
+        {
+            effective-ip 10.11.50.21
+            effective-port 1026
+            ip 10.11.50.21
+        }
+        {
+            effective-ip 10.12.0.57
+            effective-port 1026
+            ip 10.12.0.57
+        }
+    }
+    version 12.0.0
+}
+cm device /Common/bigip-vpn-02.mgmt.example.com {
+    active-modules { "APM, Base, VE GBB (500 CCU)|JOOGREZ-ILUCDRT|Anti-Virus Checks|Base Endpoint Security Checks|Firewall Checks|Network Access|Secure Virtual Keyboard|APM, Web Application|Machine Certificate Checks|Protected Workspace|Remote Desktop|App Tunnel" "BT-VE, 1G|YHYXYJW-KHLPSGJ|IPV6 Gateway|Rate Shaping|Ram Cache|SDN Services, VE|Routing Bundle, VE|DNS-GTM, Base, 1Gbps|ASM, VE|SSL, VE|AFM, VE|Max Compression, VE|Acceleration Manager, VE|DNS Rate Fallback, 100|DNS Licensed Objects, 5|GTM Rate Fallback, 100|DNS Rate Limit, 1000 QPS|GTM Rate, 1000|GTM Licensed Objects, 25|PSM, VE|CGN, BIG-IP VE, AFM ONLY" }
+    base-mac 00:50:56:9a:50:c9
+    build 0.0.606
+    cert /Common/dtdi.crt
+    chassis-id 421ae586-0a1b-1060-802db7bf2a7d
+    configsync-ip 10.12.0.58
+    edition Final
+    hostname bigip-vpn-02.mgmt.example.com
+    key /Common/dtdi.key
+    management-ip 10.11.50.22
+    marketing-name "BIG-IP Virtual Edition"
+    mirror-ip 10.12.0.58
+    optional-modules { "Advanced Protocols, VE" "App Mode (TMSH Only, No Root/Bash)" "Best, 1 Gbps -3 Gbps Upgrade" "BIG-IP VE, Multicast Routing" "Concurrent Users" "Concurrent Users and Access Sessions, VE" "Crytpo Offload, VE, Tier 2 (1G - 10G)" "DNS and GTM (250 QPS), VE" "External Interface and Network HSM, VE" "IPI Subscription, 1Yr, VE" "IPI Subscription, 3Yr, VE" "PEM URL Filtering, Subscription, 1Yr, 1G, 3G, 5G" "PEM URL Filtering, Subscription, 3Yr, 1G, 3G, 5G" "PEM, ADD-VE, 1G" "PEM, Quota Management, VE" "SSL, Forward Proxy, VE" "SWG Subscription, 1Yr, VE" "SWG Subscription, 3Yr, VE" "URL Filtering Subscription, 1Yr, VE" "URL Filtering Subscription, 3Yr, VE" }
+    platform-id Z100
+    product BIG-IP
+    self-device true
+    time-zone America/Los_Angeles
+    unicast-address {
+        {
+            effective-ip 10.11.50.22
+            effective-port 1026
+            ip 10.11.50.22
+        }
+        {
+            effective-ip 10.12.0.58
+            effective-port 1026
+            ip 10.12.0.58
+        }
+    }
+    version 12.0.0
+}
+cm device-group /Common/device_trust_group {
+    auto-sync enabled
+    devices {
+        /Common/bigip-vpn-01.mgmt.example.com { }
+        /Common/bigip-vpn-02.mgmt.example.com { }
+    }
+    hidden true
+    network-failover disabled
+}
+cm device-group /Common/gtm {
+    devices {
+        /Common/bigip-vpn-02.mgmt.example.com { }
+    }
+    hidden true
+    network-failover disabled
+}
+cm device-group /Common/my_sync_failover_group {
+    auto-sync enabled
+    devices {
+        /Common/bigip-vpn-01.mgmt.example.com { }
+        /Common/bigip-vpn-02.mgmt.example.com { }
+    }
+    type sync-failover
+}
+cm key /Common/dtca.key {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_key_d/:Common:dtca.key_130411_3
+    checksum SHA1:1704:7d7e1afe0e9d1c96145695244c9b8a5aaedffa01
+    revision 3
+}
+cm key /Common/dtdi.key {
+    cache-path /config/filestore/files_d/Common_d/trust_certificate_key_d/:Common:dtdi.key_130407_2
+    checksum SHA1:1704:51b225687b061e267ed55ee1ad1c1ddc6942cba2
+    revision 2
+}
+cm traffic-group /Common/traffic-group-1 {
+    ha-group vpn_conn_2_up
+    unit-id 1
+}
+cm traffic-group /Common/traffic-group-2 {
+    auto-failback-enabled true
+    ha-order {
+        /Common/bigip-vpn-01.mgmt.example.com
+        /Common/bigip-vpn-02.mgmt.example.com
+    }
+    unit-id 2
+}
+cm traffic-group /Common/traffic-group-3 {
+    auto-failback-enabled true
+    ha-order {
+        /Common/bigip-vpn-02.mgmt.example.com
+        /Common/bigip-vpn-01.mgmt.example.com
+    }
+    unit-id 3
+}
+cm traffic-group /Common/traffic-group-local-only { }
+cm trust-domain /Common/Root {
+    ca-cert /Common/dtca.crt
+    ca-cert-bundle /Common/dtca-bundle.crt
+    ca-devices { /Common/bigip-vpn-01.mgmt.example.com /Common/bigip-vpn-02.mgmt.example.com }
+    ca-key /Common/dtca.key
+    guid 980ca578-4fe3-477b-b8020050569a0169
+    status uninitialized
+    trust-group /Common/device_trust_group
+}
+gtm global-settings metrics {
+    metrics-collection-protocols { icmp }
+}
+gtm global-settings metrics-exclusions {
+    addresses none
+}
+ltm default-node-monitor {
+    rule none
+}
+ltm node /Common/169.254.12.29 {
+    address 169.254.12.29
+}
+ltm node /Common/169.254.12.45 {
+    address 169.254.12.45
+}
+ltm node /Common/169.254.12.77 {
+    address 169.254.12.77
+}
+ltm node /Common/169.254.12.161 {
+    address 169.254.12.161
+}
+ltm pool /Common/aws_conn_1_keep_alive_pool {
+    members {
+        /Common/169.254.12.29:179 {
+            address 169.254.12.29
+        }
+        /Common/169.254.12.45:179 {
+            address 169.254.12.45
+        }
+    }
+    monitor /Common/tcp_half_open and /Common/gateway_icmp 
+}
+ltm pool /Common/aws_conn_2_keep_alive_pool {
+    members {
+        /Common/169.254.12.161:179 {
+            address 169.254.12.161
+        }
+        /Common/169.254.12.77:179 {
+            address 169.254.12.77
+        }
+    }
+    monitor /Common/tcp_half_open and /Common/gateway_icmp 
+}
+ltm virtual /Common/vs_outbound {
+    destination /Common/0.0.0.0:0
+    ip-forward
+    mask any
+    profiles {
+        /Common/fastL4-route-friendly { }
+    }
+    source 0.0.0.0/0
+    translate-address disabled
+    translate-port disabled
+}
+ltm virtual-address /Common/0.0.0.0 {
+    address any
+    arp disabled
+    icmp-echo disabled
+    mask any
+    traffic-group /Common/traffic-group-1
+}
+ltm global-settings connection {
+    vlan-keyed-conn disabled
+}
+ltm global-settings general {
+    share-single-mac vmw-compat
+}
+ltm profile fastl4 /Common/fastL4-route-friendly {
+    app-service none
+    loose-close enabled
+    loose-initialization enabled
+    reset-on-timeout disabled
+}
+ltm profile tcp /Common/tcp-ssl-lan-optimized {
+    ack-on-push disabled
+    app-service none
+    defaults-from /Common/tcp-lan-optimized
+    delayed-acks disabled
+    nagle disabled
+}
+ltm profile tcp /Common/tcp-ssl-wan-optimized {
+    ack-on-push disabled
+    app-service none
+    defaults-from /Common/tcp-wan-optimized
+    delayed-acks disabled
+    nagle disabled
+}
+net interface 1.1 {
+    media-fixed 10000T-FD
+}
+net interface 1.2 {
+    media-fixed 10000T-FD
+}
+net interface 1.3 {
+    media-fixed 10000T-FD
+}
+net route /Common/default {
+    gw 10.12.255.254
+    network default
+}
+net route-domain /Common/0 {
+    id 0
+    routing-protocol {
+        BGP
+    }
+    vlans {
+        /Common/http-tunnel
+        /Common/socks-tunnel
+        /Common/external
+        /Common/aws_conn_2_tun_2
+        /Common/aws_conn_2_tun_1
+        /Common/internal
+        /Common/aws_conn_1_tun_1
+        /Common/aws_conn_1_tun_2
+    }
+}
+net self /Common/169.254.12.78 {
+    address 169.254.12.78/30
+    allow-service all
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/aws_conn_2_tun_2
+}
+net self /Common/169.254.12.162 {
+    address 169.254.12.162/30
+    allow-service all
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/aws_conn_2_tun_1
+}
+net self /Common/10.12.0.56 {
+    address 10.12.0.56/16
+    traffic-group /Common/traffic-group-1
+    vlan /Common/external
+}
+net self /Common/10.3.0.1 {
+    address 10.3.0.1/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-1
+    vlan /Common/internal
+}
+net self /Common/208.85.211.58 {
+    address 208.85.211.58/28
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/external
+}
+net self /Common/10.12.0.58 {
+    address 10.12.0.58/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/external
+}
+net self /Common/10.3.0.3 {
+    address 10.3.0.3/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/internal
+}
+net self-allow {
+    defaults {
+        igmp:0
+        ospf:0
+        pim:0
+        tcp:161
+        tcp:22
+        tcp:4353
+        tcp:443
+        tcp:53
+        udp:1026
+        udp:161
+        udp:4353
+        udp:520
+        udp:53
+    }
+}
+net stp /Common/cist {
+    interfaces {
+        1.1 {
+            external-path-cost 2000
+            internal-path-cost 2000
+        }
+        1.2 {
+            external-path-cost 2000
+            internal-path-cost 2000
+        }
+    }
+    vlans {
+        /Common/external
+        /Common/internal
+    }
+}
+net vlan /Common/external {
+    interfaces {
+        1.2 { }
+    }
+    tag 4093
+}
+net vlan /Common/internal {
+    interfaces {
+        1.1 { }
+    }
+    tag 4094
+}
+net fdb tunnel /Common/aws_conn_1_tun_1 { }
+net fdb tunnel /Common/aws_conn_1_tun_2 { }
+net fdb tunnel /Common/aws_conn_2_tun_1 { }
+net fdb tunnel /Common/aws_conn_2_tun_2 { }
+net fdb tunnel /Common/http-tunnel { }
+net fdb tunnel /Common/socks-tunnel { }
+net fdb vlan /Common/external { }
+net fdb vlan /Common/internal { }
+net ipsec ike-daemon /Common/ikedaemon {
+    log-publisher /Common/default-ipsec-log-publisher
+}
+net ipsec ike-peer /Common/aws_vpn_conn_1_peer_1 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted XXXXXXXX
+    remote-address 52.24.244.82
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_1_peer_2 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted XXXXXXXX
+    remote-address 52.25.19.43
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_2_peer_1 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted XXXXXXXX
+    remote-address 52.25.240.97
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_2_peer_2 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted XXXXXXXX
+    remote-address 54.200.79.6
+    verify-cert true
+    version { v1 }
+}
+net ipsec ipsec-policy /Common/AWS_IPSEC_Interface_Policy {
+    ike-phase2-auth-algorithm sha1
+    ike-phase2-encrypt-algorithm aes128
+    ike-phase2-lifetime 60
+    ike-phase2-perfect-forward-secrecy modp1024
+    mode interface
+}
+net ipsec traffic-selector /Common/aws_conn_1_tun_1_selector {
+    destination-address 169.254.12.44/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.44/30
+}
+net ipsec traffic-selector /Common/aws_conn_1_tun_2_selector {
+    destination-address 169.254.12.28/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.28/30
+}
+net ipsec traffic-selector /Common/aws_conn_2_tun_1_selector {
+    destination-address 169.254.12.160/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.160/30
+}
+net ipsec traffic-selector /Common/aws_conn_2_tun_2_selector {
+    destination-address 169.254.12.76/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.76/30
+}
+net tunnels ipsec /Common/aws_conn_1_tun_1_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_1_tun_1_selector
+}
+net tunnels ipsec /Common/aws_conn_1_tun_2_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_1_tun_2_selector
+}
+net tunnels ipsec /Common/aws_conn_2_tun_1_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_2_tun_1_selector
+}
+net tunnels ipsec /Common/aws_conn_2_tun_2_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_2_tun_2_selector
+}
+net tunnels tunnel /Common/aws_conn_1_tun_1 {
+    local-address 208.85.211.57
+    mtu 1436
+    profile /Common/aws_conn_1_tun_1_profile
+    remote-address 52.24.244.82
+}
+net tunnels tunnel /Common/aws_conn_1_tun_2 {
+    local-address 208.85.211.57
+    mtu 1436
+    profile /Common/aws_conn_1_tun_2_profile
+    remote-address 52.25.19.43
+}
+net tunnels tunnel /Common/aws_conn_2_tun_1 {
+    local-address 208.85.211.58
+    mtu 1436
+    profile /Common/aws_conn_2_tun_1_profile
+    remote-address 52.25.240.97
+}
+net tunnels tunnel /Common/aws_conn_2_tun_2 {
+    local-address 208.85.211.58
+    mtu 1436
+    profile /Common/aws_conn_2_tun_2_profile
+    remote-address 54.200.79.6
+}
+net tunnels tunnel /Common/http-tunnel {
+    description "Tunnel for http-explicit profile"
+    profile /Common/tcp-forward
+}
+net tunnels tunnel /Common/socks-tunnel {
+    description "Tunnel for socks profile"
+    profile /Common/tcp-forward
+}
+pem global-settings analytics { }
+security dos udp-portlist /Common/dos-udp-portlist {
+    entries {
+        entry1 {
+            match-direction both
+            port-number 53
+        }
+    }
+    list-type exclude-listed-ports
+}
+security firewall config-change-log {
+    log-publisher /Common/local-db-publisher
+}
+security firewall port-list /Common/_sys_self_allow_tcp_defaults {
+    ports {
+        22 { }
+        53 { }
+        161 { }
+        443 { }
+        1029-1043 { }
+        4353 { }
+    }
+}
+security firewall port-list /Common/_sys_self_allow_udp_defaults {
+    ports {
+        53 { }
+        161 { }
+        520 { }
+        1026 { }
+        4353 { }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_all {
+    rules {
+        _sys_allow_all {
+            action accept
+        }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_defaults {
+    rules {
+        _sys_allow_tcp_defaults {
+            action accept
+            ip-protocol tcp
+            destination {
+                port-lists {
+                    /Common/_sys_self_allow_tcp_defaults
+                }
+            }
+        }
+        _sys_allow_udp_defaults {
+            action accept
+            ip-protocol udp
+            destination {
+                port-lists {
+                    /Common/_sys_self_allow_udp_defaults
+                }
+            }
+        }
+        _sys_allow_ospf_defaults {
+            action accept
+            ip-protocol ospf
+        }
+        _sys_allow_pim_defaults {
+            action accept
+            ip-protocol pim
+        }
+        _sys_allow_igmp_defaults {
+            action accept
+            ip-protocol igmp
+        }
+    }
+}
+security firewall rule-list /Common/_sys_self_allow_management {
+    rules {
+        _sys_allow_ssh {
+            action accept
+            ip-protocol tcp
+            destination {
+                ports {
+                    22 { }
+                }
+            }
+        }
+        _sys_allow_web {
+            action accept
+            ip-protocol tcp
+            destination {
+                ports {
+                    443 { }
+                }
+            }
+        }
+    }
+}
+security ip-intelligence policy /Common/ip-intelligence { }
+sys db adm.block.enable {
+    value "1"
+}
+sys db avr.stats.internal.maxentitiespertable {
+    value "20000"
+}
+sys db config.allow.rfc3927 {
+    value "enable"
+}
+sys db dhclient.mgmt {
+    value "disable"
+}
+sys db gtm.peerinfototalgtms {
+    value "0"
+}
+sys db log.accesscontrol.level {
+    value "Notice"
+}
+sys db log.accessperrequest.level {
+    value "Notice"
+}
+sys db log.apmacl.level {
+    value "Notice"
+}
+sys db log.eca.level {
+    value "Notice"
+}
+sys db log.sso.level {
+    value "Notice"
+}
+sys db log.swg.level {
+    value "Notice"
+}
+sys db provision.1nic {
+    value "disable"
+}
+sys db provision.extramb {
+    value "0"
+}
+sys db provision.tomcat.extramb {
+    value "0"
+}
+sys db rule.validation {
+    value "strict"
+}
+sys db ssl.certrequest.commonname {
+    value "bigip-vpn-01.mgmt.example.com"
+}
+sys db ssl.certrequest.countryname {
+    value "US"
+}
+sys db ssl.certrequest.divisionname {
+    value "MyOrg"
+}
+sys db ssl.certrequest.localityname {
+    value "Seattle"
+}
+sys db ssl.certrequest.organizationname {
+    value "MyCompany"
+}
+sys db ssl.certrequest.stateorprovincename {
+    value "WA"
+}
+sys db systemauth.primaryadminuser {
+    value "admin"
+}
+sys db tm.allowmulticastl2destinationtraffic {
+    value "disable"
+}
+sys db tm.rstcause.log {
+    value "enable"
+}
+sys db tm.rstcause.pkt {
+    value "enable"
+}
+sys db tm.tcpallowinsecurerst {
+    value "disable"
+}
+sys db tmm.classallocatemetadata {
+    value "enable"
+}
+sys db tmm.coredump {
+    value "enable"
+}
+sys db tmm.gradualfileloadadjust {
+    value "enable"
+}
+sys db tmm.lb.wlcoffset {
+    value "disable"
+}
+sys db tmm.lognonsessionpackets {
+    value "enable"
+}
+sys db tmm.verbose {
+    value "disable"
+}
+sys db tmm.verbosecmp {
+    value "disable"
+}
+sys dns {
+    name-servers { 10.11.26.1 }
+}
+sys feature-module cgnat {
+    disabled
+}
+sys folder / {
+    device-group /Common/my_sync_failover_group
+    hidden false
+    inherited-devicegroup false
+    inherited-traffic-group false
+    traffic-group /Common/traffic-group-1
+}
+sys folder /Common {
+    device-group /Common/my_sync_failover_group
+    hidden false
+    inherited-devicegroup true
+    inherited-traffic-group true
+    traffic-group /Common/traffic-group-1
+}
+sys global-settings {
+    gui-setup disabled
+    hostname bigip-vpn-02.mgmt.example.com
+    mgmt-dhcp disabled
+}
+sys ha-group vpn_conn_2_up {
+    pools {
+        /Common/aws_conn_2_keep_alive_pool {
+            threshold 1
+            weight 10
+        }
+    }
+}
+sys httpd {
+    allow { ALL }
+}
+sys management-dhcp /Common/sys-mgmt-dhcp-config {
+    request-options { subnet-mask broadcast-address routers domain-name domain-name-servers host-name ntp-servers }
+}
+sys management-ip 10.11.50.22/16 {
+    description configured-by-dhcp
+}
+sys management-ovsdb {
+    ca-cert-file none
+    cert-file none
+    cert-key-file none
+    disabled
+    log-level info
+}
+sys management-route /Common/default {
+    description configured-by-dhcp
+    gateway 10.11.255.254
+    network default
+}
+sys ntp {
+    servers { 0.pool.ntp.org }
+}
+sys provision ltm {
+    level nominal
+}
+sys snmp {
+    agent-addresses { tcp6:161 udp6:161 }
+    allowed-addresses { ALL }
+    communities {
+        /Common/comm-public {
+            community-name public
+            source default
+        }
+    }
+    disk-monitors {
+        /Common/root {
+            minspace 2000
+            path /
+        }
+        /Common/var {
+            minspace 10000
+            path /var
+        }
+    }
+    process-monitors {
+        /Common/bigd {
+            process bigd
+        }
+        /Common/chmand {
+            process chmand
+        }
+        /Common/httpd {
+            max-processes infinity
+            process httpd
+        }
+        /Common/mcpd {
+            process mcpd
+        }
+        /Common/sod {
+            process sod
+        }
+        /Common/tmm {
+            max-processes infinity
+            process tmm
+        }
+    }
+}
+sys state-mirroring {
+    addr 10.12.0.58
+}
+sys ecm cloud-provider /Common/aws-ec2 {
+    description "The aws-ec2 parameters"
+    property-template {
+        account { }
+        availability-zone {
+            valid-values { a b c d }
+        }
+        instance-type {
+            valid-values { t2.micro t2.small t2.medium m3.medium m3.large m3.xlarge m3.2xlarge c3.large c3.xlarge c3.2xlarge c3.4xlarge c3.8xlarge r3.large r3.xlarge r3.2xlarge r3.4xlarge r3.8xlarge }
+        }
+        region {
+            valid-values { us-east-1 us-west-1 us-west-2 sa-east-1 eu-west-1 eu-central-1 ap-southeast-2 ap-southeast-1 ap-northeast-1 }
+        }
+    }
+}
+sys ecm cloud-provider /Common/dnet {
+    description "The dnet parameters"
+}
+sys ecm cloud-provider /Common/vsphere {
+    description "The vsphere parameters"
+    property-template {
+        cloud-host-ip { }
+        dhcp-network-name { }
+        end-point-url { }
+        node-name { }
+    }
+}
+sys fpga firmware-config {
+    type standard-balanced-fpga
+}
+sys sflow global-settings http { }
+sys sflow global-settings vlan { }
+sys software update {
+    auto-check enabled
+    frequency weekly
+}
+wom endpoint-discovery { }

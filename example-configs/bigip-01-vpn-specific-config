@@ -1,0 +1,288 @@
+#TMSH-VERSION: 12.0.0
+
+cm traffic-group /Common/traffic-group-1 {
+    ha-group vpn_conn_1_up
+    unit-id 1
+}
+cm traffic-group /Common/traffic-group-2 {
+    auto-failback-enabled true
+    ha-order {
+        /Common/bigip-vpn-01.mgmt.example.com
+        /Common/bigip-vpn-02.mgmt.example.com
+    }
+    unit-id 2
+}
+cm traffic-group /Common/traffic-group-3 {
+    auto-failback-enabled true
+    ha-order {
+        /Common/bigip-vpn-02.mgmt.example.com
+        /Common/bigip-vpn-01.mgmt.example.com
+    }
+    unit-id 3
+}
+cm traffic-group /Common/traffic-group-local-only { }
+ltm pool /Common/aws_conn_1_keep_alive_pool {
+    members {
+        /Common/169.254.12.29:179 {
+            address 169.254.12.29
+        }
+        /Common/169.254.12.45:179 {
+            address 169.254.12.45
+        }
+    }
+    monitor /Common/tcp_half_open and /Common/gateway_icmp 
+}
+ltm pool /Common/aws_conn_2_keep_alive_pool {
+    members {
+        /Common/169.254.12.161:179 {
+            address 169.254.12.161
+        }
+        /Common/169.254.12.77:179 {
+            address 169.254.12.77
+        }
+    }
+    monitor /Common/tcp_half_open and /Common/gateway_icmp 
+}
+ltm virtual /Common/vs_outbound {
+    destination /Common/0.0.0.0:0
+    ip-forward
+    mask any
+    profiles {
+        /Common/fastL4-route-friendly { }
+    }
+    source 0.0.0.0/0
+    translate-address disabled
+    translate-port disabled
+}
+ltm virtual-address /Common/0.0.0.0 {
+    address any
+    arp disabled
+    icmp-echo disabled
+    mask any
+    traffic-group /Common/traffic-group-1
+}
+ltm global-settings connection {
+    vlan-keyed-conn disabled
+}
+ltm profile fastl4 /Common/fastL4-route-friendly {
+    app-service none
+    loose-close enabled
+    loose-initialization enabled
+    reset-on-timeout disabled
+}
+net interface 1.1 {
+    media-fixed 10000T-FD
+}
+net interface 1.2 {
+    media-fixed 10000T-FD
+}
+net interface 1.3 {
+    media-fixed 10000T-FD
+}
+net route /Common/default {
+    gw 10.12.255.254
+    network default
+}
+net route-domain /Common/0 {
+    id 0
+    routing-protocol {
+        BGP
+    }
+    vlans {
+        /Common/http-tunnel
+        /Common/socks-tunnel
+        /Common/aws_conn_2_tun_2
+        /Common/aws_conn_2_tun_1
+        /Common/external
+        /Common/internal
+        /Common/aws_conn_1_tun_1
+        /Common/aws_conn_1_tun_2
+    }
+}
+net self /Common/169.254.12.30 {
+    address 169.254.12.30/30
+    allow-service all
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/aws_conn_1_tun_2
+}
+net self /Common/169.254.12.46 {
+    address 169.254.12.46/30
+    allow-service all
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/aws_conn_1_tun_1
+}
+net self /Common/10.12.0.56 {
+    address 10.12.0.56/16
+    traffic-group /Common/traffic-group-1
+    vlan /Common/external
+}
+net self /Common/10.3.0.1 {
+    address 10.3.0.1/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-1
+    vlan /Common/internal
+}
+net self /Common/208.85.211.57 {
+    address 208.85.211.57/28
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/external
+}
+net self /Common/10.12.0.57 {
+    address 10.12.0.57/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/external
+}
+net self /Common/10.3.0.2 {
+    address 10.3.0.2/16
+    allow-service {
+        default
+    }
+    traffic-group /Common/traffic-group-local-only
+    vlan /Common/internal
+}
+net vlan /Common/external {
+    interfaces {
+        1.2 { }
+    }
+    tag 4093
+}
+net vlan /Common/internal {
+    interfaces {
+        1.1 { }
+    }
+    tag 4094
+}
+net ipsec ike-peer /Common/aws_vpn_conn_1_peer_1 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted $M$0H$jhN+jj5RrXsvS18mzeEOkn5kRd9Ok7Tjraa8BkdstHXYfsqahVguu7X4HqOhpb76
+    remote-address 52.24.244.82
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_1_peer_2 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted $M$Hr$X2YPDMxlyFYG94tbzWWJu8rBokTwIq7cPMazg+iMfquhQKas+M2zSpZR8wLA3m9C
+    remote-address 52.25.19.43
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_2_peer_1 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted $M$Yc$h028aQOkUbxL3WHRxxnmWyitaOlkqKsWXJBIcBcqS+rgdmD3Tck5g4ANipM95ehh
+    remote-address 52.25.240.97
+    verify-cert true
+    version { v1 }
+}
+net ipsec ike-peer /Common/aws_vpn_conn_2_peer_2 {
+    lifetime 480
+    my-id-type address
+    peers-id-type address
+    phase1-auth-method pre-shared-key
+    phase1-encrypt-algorithm aes128
+    preshared-key-encrypted $M$Oh$z6Mo4xqtLS3cLgAtBcUVN6M2WzA4OkiZjAbZoAnboq0VpfsargTDVpYn94Ee2YQQ
+    remote-address 54.200.79.6
+    verify-cert true
+    version { v1 }
+}
+net ipsec ipsec-policy /Common/AWS_IPSEC_Interface_Policy {
+    ike-phase2-auth-algorithm sha1
+    ike-phase2-encrypt-algorithm aes128
+    ike-phase2-lifetime 60
+    ike-phase2-perfect-forward-secrecy modp1024
+    mode interface
+}
+net ipsec traffic-selector /Common/aws_conn_1_tun_1_selector {
+    destination-address 169.254.12.44/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.44/30
+}
+net ipsec traffic-selector /Common/aws_conn_1_tun_2_selector {
+    destination-address 169.254.12.28/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.28/30
+}
+net ipsec traffic-selector /Common/aws_conn_2_tun_1_selector {
+    destination-address 169.254.12.160/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.160/30
+}
+net ipsec traffic-selector /Common/aws_conn_2_tun_2_selector {
+    destination-address 169.254.12.76/30
+    ipsec-policy /Common/AWS_IPSEC_Interface_Policy
+    source-address 169.254.12.76/30
+}
+net tunnels ipsec /Common/aws_conn_1_tun_1_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_1_tun_1_selector
+}
+net tunnels ipsec /Common/aws_conn_1_tun_2_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_1_tun_2_selector
+}
+net tunnels ipsec /Common/aws_conn_2_tun_1_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_2_tun_1_selector
+}
+net tunnels ipsec /Common/aws_conn_2_tun_2_profile {
+    app-service none
+    defaults-from /Common/ipsec
+    traffic-selector /Common/aws_conn_2_tun_2_selector
+}
+net tunnels tunnel /Common/aws_conn_1_tun_1 {
+    local-address 208.85.211.57
+    mtu 1436
+    profile /Common/aws_conn_1_tun_1_profile
+    remote-address 52.24.244.82
+}
+net tunnels tunnel /Common/aws_conn_1_tun_2 {
+    local-address 208.85.211.57
+    mtu 1436
+    profile /Common/aws_conn_1_tun_2_profile
+    remote-address 52.25.19.43
+}
+net tunnels tunnel /Common/aws_conn_2_tun_1 {
+    local-address 208.85.211.58
+    mtu 1436
+    profile /Common/aws_conn_2_tun_1_profile
+    remote-address 52.25.240.97
+}
+net tunnels tunnel /Common/aws_conn_2_tun_2 {
+    local-address 208.85.211.58
+    mtu 1436
+    profile /Common/aws_conn_2_tun_2_profile
+    remote-address 54.200.79.6
+}
+sys db config.allow.rfc3927 {
+    value "enable"
+}
+sys db dhclient.mgmt {
+    value "disable"
+}
+sys ha-group vpn_conn_1_up {
+    pools {
+        /Common/aws_conn_1_keep_alive_pool {
+            threshold 1
+            weight 10
+        }
+    }
+}

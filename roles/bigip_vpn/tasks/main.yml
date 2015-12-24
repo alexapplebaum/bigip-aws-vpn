@@ -21,7 +21,14 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/route-domain'
     resource_key="name"
-    payload='{"name":"0","routingProtocol":["BGP"]}'
+    payload='{
+              "name":"0",
+              "partition":"Common",
+              "routingProtocol":["BGP"]
+            }'
+
+# NOTE: AWS lifetime given in seconds so have to convert lifetime to minutes for bigip iControl Rest
+# http://jinja.pocoo.org/docs/dev/templates/
 
 - name: Adding IKE Peers
   delegate_to: localhost
@@ -32,18 +39,21 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/ipsec/ike-peer'
     resource_key="name"
-    payload='{"name":"aws_vpn_{{ connection }}_peer_{{ item.0 + 1 }}",
-        "lifetime":"480",
-        "myIdType":"address",
-        "peersIdType":"address",
-        "phase1AuthMethod":"pre-shared-key",
-        "phase1EncryptAlgorithm":"aes128",
-        "presharedKey":"{{ item.1.ike.pre_shared_key }}",
-        "remoteAddress":"{{ item.1.vpn_gateway.tunnel_outside_address.ip_address }}",
-        "verifyCert":"true",
-        "version":["v1"]}'
-
+    payload='{
+              "name":"aws_vpn_{{ connection }}_peer_{{ item.0 + 1 }}",
+              "partition":"Common",
+              "lifetime":"{{ (item.1.ike.lifetime|int / 60)| int | string }}",
+              "myIdType":"address",
+              "peersIdType":"address",
+              "phase1AuthMethod":"pre-shared-key",
+              "phase1EncryptAlgorithm":"aes128",
+              "presharedKey":"{{ item.1.ike.pre_shared_key }}",
+              "remoteAddress":"{{ item.1.vpn_gateway.tunnel_outside_address.ip_address }}",
+              "verifyCert":"true",
+              "version":["v1"]
+            }'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
+
 
 - name: Adding AWS IPSEC POLICY
   delegate_to: localhost
@@ -54,12 +64,15 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/ipsec/ipsec-policy'
     resource_key="name"
-    payload='{"name":"AWS_IPSEC_Interface_Policy",
-        "ikePhase2AuthAlgorithm":"sha1",
-        "ikePhase2EncryptAlgorithm":"aes128",
-        "ikePhase2Lifetime":"60",
-        "ikePhase2PerfectForwardSecrecy":"modp1024",
-        "mode":"interface"}'
+    payload='{
+              "name":"AWS_IPSEC_Interface_Policy",
+              "partition":"Common",
+              "ikePhase2AuthAlgorithm":"sha1",
+              "ikePhase2EncryptAlgorithm":"aes128",
+              "ikePhase2Lifetime":"60",
+              "ikePhase2PerfectForwardSecrecy":"modp1024",
+              "mode":"interface"
+            }'
 
 
 #Using IPADDR FILTER TO GET SUBNET FROM HOST ADDRESS
@@ -74,11 +87,15 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/ipsec/traffic-selector'
     resource_key="name"
-    payload='{"name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}_selector",
-        "sourceAddress":"{{ item.1.vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(item.1.vpn_gateway.tunnel_inside_address.network_cidr) }}",
-        "destinationAddress":"{{ item.1.vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(item.1.vpn_gateway.tunnel_inside_address.network_cidr) }}",
-        "ipsecPolicy":"/Common/AWS_IPSEC_Interface_Policy"}'
+    payload='{
+              "name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}_selector",
+              "partition":"Common",
+              "sourceAddress":"{{ item.1.vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(item.1.vpn_gateway.tunnel_inside_address.network_cidr) }}",
+              "destinationAddress":"{{ item.1.vpn_gateway.tunnel_inside_address.ip_address | ipsubnet(item.1.vpn_gateway.tunnel_inside_address.network_cidr) }}",
+              "ipsecPolicy":"/Common/AWS_IPSEC_Interface_Policy"
+            }'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
+
 
 - name: Adding IPSEC PROFILE TO CONN TUNNEL
   delegate_to: localhost
@@ -89,9 +106,12 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/tunnels/ipsec'
     resource_key="name"
-    payload='{"name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}_profile",
-        "defaultsFrom":"/Common/ipsec",
-        "trafficSelector":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_selector"}'
+    payload='{
+              "name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}_profile",
+              "partition":"Common",
+              "defaultsFrom":"/Common/ipsec",
+              "trafficSelector":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_selector"
+            }'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
 
 - name: Adding tunnels for VPN Connections
@@ -103,12 +123,16 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/tunnels/tunnel'
     resource_key="name"
-    payload='{"name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}",
-        "localAddress":"{{ item.1.customer_gateway.tunnel_outside_address.ip_address }}",
-        "remoteAddress":"{{ item.1.vpn_gateway.tunnel_outside_address.ip_address }}",
-        "mtu":"1436",
-        "profile":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_profile"}'
+    payload='{
+              "name":"aws_{{ connection }}_tun_{{ item.0 + 1 }}",
+              "partition":"Common",
+              "localAddress":"{{ item.1.customer_gateway.tunnel_outside_address.ip_address }}",
+              "remoteAddress":"{{ item.1.vpn_gateway.tunnel_outside_address.ip_address }}",
+              "mtu":"1436",
+              "profile":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}_profile"
+            }'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
+
 
 - name: Adding SELF-IPs to TUNNELS
   delegate_to: localhost
@@ -119,11 +143,14 @@
     password={{ bigip_rest_password }}
     collection_path='mgmt/tm/net/self'
     resource_key="name"
-    payload='{"name":"{{ item.1.customer_gateway.tunnel_inside_address.ip_address }}",
-        "address":"{{ item.1.customer_gateway.tunnel_inside_address.ip_address }}/{{ item.1.customer_gateway.tunnel_inside_address.network_cidr }}",
-        "trafficGroup":"/Common/traffic-group-local-only",
-        "allowService":"all",
-        "vlan":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}"}'
+    payload='{
+              "name":"{{ item.1.customer_gateway.tunnel_inside_address.ip_address }}",
+              "partition":"Common",
+              "address":"{{ item.1.customer_gateway.tunnel_inside_address.ip_address }}/{{ item.1.customer_gateway.tunnel_inside_address.network_cidr }}",
+              "trafficGroup":"/Common/traffic-group-local-only",
+              "allowService":"all",
+              "vlan":"/Common/aws_{{ connection }}_tun_{{ item.0 + 1 }}"
+            }'
   with_indexed_items: customer_gateway_config.vpn_connection.ipsec_tunnel
 
 - name: Create VPN Connection Monitoring Pool
@@ -136,16 +163,18 @@
     collection_path='mgmt/tm/ltm/pool'
     resource_key="name"
     payload='{
-        "name":"aws_{{ connection }}_keep_alive_pool",
-        "members":[
-        {"name":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address}}:179",
-        "address":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address}}"}, 
-        {"name":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address}}:179",
-        "address":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address}}"}
-        ], 
-        "monitor":"tcp_half_open"
-        }'
+              "name":"aws_{{ connection }}_keep_alive_pool",
+              "partition":"Common",
+              "members":[
+              {"name":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address}}:179",
+              "address":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[0].vpn_gateway.tunnel_inside_address.ip_address}}"}, 
+              {"name":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address}}:179",
+              "address":"{{customer_gateway_config.vpn_connection.ipsec_tunnel[1].vpn_gateway.tunnel_inside_address.ip_address}}"}
+              ], 
+              "monitor":"tcp_half_open and gateway_icmp"
+            }'
 
+# Below = Optional 
 - name: Create HA Group
   delegate_to: localhost
   bigip_config:
@@ -179,8 +208,9 @@
     resource_key="name"
     payload='{
               "name":"traffic-group-1",
+              "partition":"Common",
               "haGroup":"vpn_{{ connection }}_up"
-              }'
+            }'
 
 
 

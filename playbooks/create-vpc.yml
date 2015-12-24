@@ -1,22 +1,64 @@
+
 - hosts: localhost
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   vars_files:
     - "~/creds.yml"
-    - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
-    - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
   tasks:
+
     - name: create vpc
       ec2_vpc:
           state: present
-          region: "{{ region }}"
-          cidr_block: "{{ cidr_block }}"
-          resource_tags: "{{ resource_tags }}"
-          subnets: "{{ subnets }}"
-          internet_gateway: "{{ internet_gateway }}"
-          route_tables: "{{ route_tables }}"
+          region: "{{region}}"
+          cidr_block: "172.16.0.0/16"
+          internet_gateway: True
+          resource_tags: { "Name":"{{env_tag}} VPC", "Environment":"{{env_tag}}",  }
+          subnets:
+                  - cidr: 172.16.1.0/24
+                    az: "{{region}}b"
+                    resource_tags: { "Name":"{{env_tag}} Mgmt-AZ1", "Environment":"{{env_tag}}", "Tier" : "Mgmt-AZ1" }
+                  - cidr: 172.16.2.0/24
+                    az: "{{region}}b"
+                    resource_tags: { "Name":"{{env_tag}} Public-AZ1", "Environment":"{{env_tag}}", "Tier" : "Public-AZ1" }
+                  - cidr: 172.16.3.0/24
+                    az: "{{region}}b"
+                    resource_tags: { "Name":"{{env_tag}} Private-AZ1", "Environment":"{{env_tag}}", "Tier" : "Private-AZ1" }
+                  - cidr: 172.16.4.0/24
+                    az: "{{region}}b"
+                    resource_tags: { "Name":"{{env_tag}} App-AZ1", "Environment":"{{env_tag}}", "Tier" : "App-AZ1" }
+                  - cidr: 172.16.11.0/24
+                    az: "{{region}}c"
+                    resource_tags: { "Name":"{{env_tag}} Mgmt-AZ2", "Environment":"{{env_tag}}", "Tier" : "Mgmt-AZ2" }
+                  - cidr: 172.16.12.0/24
+                    az: "{{region}}c"
+                    resource_tags: {  "Name":"{{env_tag}} Public-AZ2","Environment":"{{env_tag}}", "Tier" : "Public-AZ2" }
+                  - cidr: 172.16.13.0/24
+                    az: "{{region}}c"
+                    resource_tags: {  "Name":"{{env_tag}} Private-AZ2","Environment":"{{env_tag}}", "Tier" : "Private-AZ2" }
+                  - cidr: 172.16.14.0/24
+                    az: "{{region}}c"
+                    resource_tags: {  "Name":"{{env_tag}} App-AZ2", "Environment":"{{env_tag}}", "Tier" : "App-AZ2" }
+          route_tables:
+                  - subnets:
+                      - 172.16.1.0/24
+                      - 172.16.11.0/24
+                    routes:
+                      - dest: 0.0.0.0/0
+                        gw: igw
+                  - subnets:
+                      - 172.16.2.0/24
+                      - 172.16.3.0/24
+                      - 172.16.12.0/24
+                      - 172.16.13.0/24
+                    routes:
+                      - dest: 0.0.0.0/0
+                        gw: igw
+                  - subnets:
+                      - 172.16.4.0/24
+                      - 172.16.14.0/24
+                    routes:
+                      - dest: 0.0.0.0/0
+                        gw: igw
       register: vpc
       tags:
           - vpc
@@ -45,17 +87,45 @@
       tags:
           - pause
 
+    # Note: User should obviously customize security groups more
+    # In this case, for testing, I'm also allowing anything in this group 
+    # to talk to my on-prem internal network defined by BIG-IP's internal SELF-IP
+    - name: set on_prem_network
+      set_fact: 
+          on_prem_network: "{{ item.address | ipsubnet(item.cidr) }}"
+      with_items: hostvars["bigip-01"].NETWORK.SELF_IPS
+      when: item.vlan == "internal"
+
     - name: Create Security Group
       ec2_group:
           state: present
-          name: "{{ security_group_name }}"
-          description: "{{ security_group_description }}"
+          name: "{{ env_tag }}_security_group"
+          description: "{{ env_tag }}_security_group"
           vpc_id: "{{ vpc.vpc_id }}"
           region: "{{ region }}"
-          rules: "{{ security_group_rules }}"
+          rules: 
+                - proto: tcp
+                  from_port: 22
+                  to_port: 22
+                  cidr_ip: 0.0.0.0/0
+                - proto: tcp
+                  from_port: 443
+                  to_port: 443
+                  cidr_ip: 0.0.0.0/0
+                - proto: tcp
+                  from_port: 80
+                  to_port: 80
+                  cidr_ip: 0.0.0.0/0
+                - proto: all
+                  # the containing group name may be specified here
+                  group_name: "{{env_tag}}_security_group"
+                  # Adding on-prem network
+                  # add any additional on prem networks below here
+                - proto: all
+                  cidr_ip: "{{on_prem_network}}"
       register: security_group
       tags:
-          - vpc
+          - security_group
 
     # - debug: var=security_group
     #   tags:
@@ -72,11 +142,13 @@
           content: "{{ security_group | to_nice_json }}" 
           dest: ../cache/{{env_tag}}/vpc_security_group.json
 
+    - name: Pausing for 15 seconds for security_group to be registered
+      pause: seconds=15
+      tags:
+          - pause
 
 - hosts: zone1-test-host
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   vars_files:
     - "~/aws_creds.yml"
     - [ "../cache/{{env_tag}}/vpc.yml" ]
@@ -86,14 +158,18 @@
 
     # - name: debug inventory_host
     #   debug: var=hostvars[inventory_hostname]
+    #   tags:
+    #       - debug
+    #       - test_host
 
+    # Place a test host in the app tier of first AZ
     - name: create a test host
       ec2:
           assign_public_ip: yes
           region: "{{ region }}"
           key_name: "{{ key_name }}"
           instance_type: "{{ instance_type }}"
-          image: "{{ base_image['us-west-2'] }}"
+          image: "{{ base_image[region] }}"
           group_id: "{{ group_id }}"
           vpc_subnet_id: "{{ item.id }}"
           wait: yes
@@ -106,9 +182,35 @@
               "{ 'Name': '{{inventory_hostname}}', 'Environment': '{{ item.resource_tags.Environment }}', 'Tier': '{{ item.resource_tags.Tier }}', 'Host-Type': 'Ubuntu' }"
       with_items: subnets
       when: item.cidr == "172.16.4.0/24"
-      register: ami_instance
+      register: ami_instance_output
       tags:
-          - ami_instance
+          - test_host
 
+    # - name: debug ami_instance_output
+    #   debug: var=ami_instance_output
+    #   tags:
+    #       - debug
+    #       - test_host
 
+    - name: set fact for ami_instance
+      set_fact:
+          ami_instance: "{{ item.tagged_instances.0 }}"
+      with_items: ami_instance_output.results
+      when: item.tagged_instances.0 is defined 
+
+    # - name: debug ami_instance
+    #   debug: var=ami_instance
+    #   tags:
+    #       - debug
+    #       - test_host
+
+    - name: persist ami_instance vars for test host to disk
+      copy:
+          content: "{{ ami_instance | to_nice_yaml }}"
+          dest: ../cache/{{env_tag}}/test_host.yml
+
+    - name: persist ami_instance id for test host to disk
+      copy:
+          content: "instance_id: {{ ami_instance.id | to_nice_yaml }}"
+          dest: ../cache/{{env_tag}}/test_host_id.yml
 

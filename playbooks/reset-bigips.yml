@@ -1,0 +1,36 @@
+
+############## BEGIN COLLECTING/SETTING VARIABLES ######
+
+- hosts: bigips
+  connection: local
+  gather_facts: False
+  vars_files:
+      - "~/creds.yml"
+  tasks:
+    - name: debug hosts before set fact
+      debug: var=hostvars[inventory_hostname]
+
+      ##### IMPORT/CONVERT DATA FROM DIFFERNT SOURCES TO FIT ROLES #####
+      # ex. massage the variables from static configs to better fit 
+      # roles from github/f5networks/aws-deployments
+    - name: set facts for bigips 
+      set_fact: 
+        ansible_ssh_host={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+        ansible_ssh_user={{ ansible_ssh_user }}
+        bigip_rest_user={{ bigip_rest_user }}
+        bigip_rest_password={{ bigip_rest_password }}
+        DeviceName={{ hostvars[inventory_hostname].SETTINGS.hostname }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
+
+    - name: debug hosts after set fact
+      debug: var=hostvars[inventory_hostname]
+
+############## END COLLECTING/SETTING VARIABLES ######
+
+- hosts: bigips
+  gather_facts: False
+  tasks:
+    - name: reset bigip configs 
+      raw: "tmsh load /sys config default; tmsh delete sys management-route all; tmsh save /sys config; rm -f /config/bigip.license; reloadlic"
+

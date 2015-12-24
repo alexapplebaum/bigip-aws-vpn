@@ -1,0 +1,5 @@
+changed: false
+group_id: sg-4b71722f
+invocation:
+    module_args: ''
+    module_name: ec2_group

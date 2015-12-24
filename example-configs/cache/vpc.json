@@ -1,0 +1,97 @@
+{
+    "changed": true, 
+    "invocation": {
+        "module_args": "", 
+        "module_name": "ec2_vpc"
+    }, 
+    "subnets": [
+        {
+            "az": "us-west-2c", 
+            "cidr": "172.16.13.0/24", 
+            "id": "subnet-9e3840c7", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Private-AZ2", 
+                "Tier": "Private-AZ2"
+            }
+        }, 
+        {
+            "az": "us-west-2b", 
+            "cidr": "172.16.4.0/24", 
+            "id": "subnet-80878ae5", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn App-AZ1", 
+                "Tier": "App-AZ1"
+            }
+        }, 
+        {
+            "az": "us-west-2c", 
+            "cidr": "172.16.14.0/24", 
+            "id": "subnet-913840c8", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn App-AZ2", 
+                "Tier": "App-AZ2"
+            }
+        }, 
+        {
+            "az": "us-west-2c", 
+            "cidr": "172.16.11.0/24", 
+            "id": "subnet-9c3840c5", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Mgmt-AZ2", 
+                "Tier": "Mgmt-AZ2"
+            }
+        }, 
+        {
+            "az": "us-west-2b", 
+            "cidr": "172.16.3.0/24", 
+            "id": "subnet-81878ae4", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Private-AZ1", 
+                "Tier": "Private-AZ1"
+            }
+        }, 
+        {
+            "az": "us-west-2c", 
+            "cidr": "172.16.12.0/24", 
+            "id": "subnet-9f3840c6", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Public-AZ2", 
+                "Tier": "Public-AZ2"
+            }
+        }, 
+        {
+            "az": "us-west-2b", 
+            "cidr": "172.16.1.0/24", 
+            "id": "subnet-87878ae2", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Mgmt-AZ1", 
+                "Tier": "Mgmt-AZ1"
+            }
+        }, 
+        {
+            "az": "us-west-2b", 
+            "cidr": "172.16.2.0/24", 
+            "id": "subnet-86878ae3", 
+            "resource_tags": {
+                "Environment": "example_vpn", 
+                "Name": "example_vpn Public-AZ1", 
+                "Tier": "Public-AZ1"
+            }
+        }
+    ], 
+    "vpc": {
+        "cidr_block": "172.16.0.0/16", 
+        "dhcp_options_id": "dopt-ab2639c9", 
+        "id": "vpc-47ae9722", 
+        "region": "us-west-2", 
+        "state": "available"
+    }, 
+    "vpc_id": "vpc-47ae9722"
+}
