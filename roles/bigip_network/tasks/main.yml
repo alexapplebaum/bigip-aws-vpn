@@ -34,7 +34,7 @@
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"name":"{{item.name}}", "address":"{{item.address}}/{{item.cidr}}", "vlan":"{{item.vlan}}", "trafficGroup":"{{item.traffic_group}}", "allowService":["default", "tcp:4353", "tcp:179"]}'
+    payload='{"name":"{{item.name}}", "address":"{{item.address}}/{{item.cidr}}", "vlan":"{{item.vlan}}", "trafficGroup":"{{item.traffic_group}}", "allowService":["{{item.allow_service}}"]}'
     collection_path='mgmt/tm/net/self'
     resource_key="name"
   with_items: self_ips

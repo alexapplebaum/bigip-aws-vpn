@@ -1,0 +1,8 @@
+---
+cluster_device_names: [ bigip-vpn-01.mgmt.example.com, bigip-vpn-02.mgmt.example.com]
+cluster_api_addrs: [ 10.11.50.21 , 10.11.50.22 ]
+cluster_mgmt_addrs: [ 10.11.50.21 , 10.11.50.22 ]
+cluster_ha_addrs: [ 10.12.0.57 , 10.12.0.58 ]
+cluster_mirror_addrs: [ 10.12.0.57 , 10.12.0.58 ]
+cluster_public_self_addrs: [ 10.12.0.57 , 10.12.0.58 ]
+cluster_public_nat_addrs: [ Not Used , Not Used ]

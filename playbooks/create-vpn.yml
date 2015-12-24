@@ -1,12 +1,8 @@
 - hosts: localhost
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   vars_files:
     - "~/creds.yml"
-    - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
-    - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
     - [ "../cache/{{env_tag}}/vpc.yml" ]
     - [ "../cache/{{env_tag}}/vpc_security_group.yml" ]
   tasks:
@@ -15,45 +11,62 @@
       ec2_customer_gateway:
           region: "{{ region }}"
           state: present
-          ip_address: 208.85.211.57
-          bgp_asn: 65000
+          ip_address: "{{ item.address }}"
+          bgp_asn: "{{ hostvars['bigip-01'].NETWORK.BGP.asn }}"
           tags: { "Name": "example_cgw_01" }
-      register: cgw_01
-
-
-    # - debug: var=cgw_01
+      with_items: hostvars['bigip-01'].NETWORK.SELF_IPS
+      when: item.customer_gateway is defined and item.customer_gateway == True
+      register: cgw_01_output
 
     - name: create customer gateway 02 
       ec2_customer_gateway:
           region: "{{ region }}"
           state: present
-          ip_address: 208.85.211.58
-          bgp_asn: 65000
+          ip_address: "{{ item.address }}"
+          bgp_asn: "{{ hostvars['bigip-02'].NETWORK.BGP.asn }}"
           tags: { "Name": "example_cgw_02" }
-      register: cgw_02
+      with_items: hostvars['bigip-02'].NETWORK.SELF_IPS
+      when: item.customer_gateway is defined and item.customer_gateway == True
+      register: cgw_02_output
 
-    # - debug: var=cgw_01
-    # - debug: var=cgw_02
+    # - debug: var=cgw_01_results
+    #   tags:
+    #       - debug
+    # - debug: var=cgw_02_results
+    #   tags:
+    #       - debug
+
+    - name: set fact for gateway 01
+      set_fact:
+          cgw_01: "{{ item }}"
+      with_items: cgw_01_output.results
+      when: item.ansible_facts is defined
+
+    - name: set fact for gateway 02
+      set_fact:
+          cgw_02: "{{ item }}"
+      with_items: cgw_02_output.results
+      when: item.ansible_facts is defined
+
 
     - name: Persist customer_gateway_01 variable data to disk in yaml
       copy: 
-          content: "{{ cgw_01.cgw | to_nice_yaml }}" 
+          content: "{{ cgw_01 | to_nice_yaml }}" 
           dest: ../cache/{{env_tag}}/cgw_01.yml
 
     - name: Persist customer_gateway_01 variable data to disk in json
       copy: 
-          content: "{{ cgw_01.cgw | to_nice_json }}" 
+          content: "{{ cgw_01 | to_nice_json }}" 
           dest: ../cache/{{env_tag}}/cgw_01.json
-
 
     - name: Persist customer_gateway_02 variable data to disk in yaml
       copy: 
-          content: "{{ cgw_02.cgw | to_nice_yaml }}" 
+          content: "{{ cgw_02 | to_nice_yaml }}" 
           dest: ../cache/{{env_tag}}/cgw_02.yml
 
     - name: Persist customer_gateway_02 variable data to disk in json
       copy: 
-          content: "{{ cgw_02.cgw | to_nice_json }}" 
+          content: "{{ cgw_02 | to_nice_json }}" 
           dest: ../cache/{{env_tag}}/cgw_02.json
 
 
@@ -66,6 +79,8 @@
       register: vpn_gw
 
     # - debug: var=vpn_gw
+    #   tags:
+    #       - debug
 
     - name: Persist vpn_gateway variable data to disk in yaml
       copy:
@@ -80,18 +95,21 @@
     - name: pause to allow time to attach gateway to vpc
       pause: seconds=20
 
-      #SET ROUTE PROPAGATION TO TRUE ON VARIOUS ROUTE TABLES
+    #SET ROUTE PROPAGATION TO TRUE ON VARIOUS ROUTE TABLES
 
-    - name: get subnet id from previous results
+    # Warning: Grabbing an App subnet from AZ1 for testing
+    - name: lookup subnet id from previous results
       set_fact: 
           subnet_id : "{{ item.id }}"
       when: item.cidr == "172.16.4.0/24"
       with_items: subnets
 
     # - debug: var=subnet_id
+    #   tags:
+    #       - debug
 
-      #grab route_table id 
-    - name: get route table id from subnet id
+    # lookup route_table id for the app subnets from custom module
+    - name: lookup route table id from subnet id
       ec2_vpc_facts:
           region: "{{ region }}"
           vpc_id: "{{ vpc_id }}"
@@ -102,6 +120,8 @@
           - route_table
 
     # - debug: var=route_table.ansible_facts.route_tables
+    #   tags:
+    #       - debug
 
     # - name: set set_fact
     #   set_fact: 
@@ -110,7 +130,8 @@
     #   when: item.ansible_facts
 
     # - debug: var=route_table_id
-
+    #   tags:
+    #       - debug
 
     - name: set route propogation to true
       ec2_vpn_gateway:
@@ -120,7 +141,7 @@
           tags: { "Name": "example_vpn_gateway" }
       register: vpn_gw
 
-
+    # CREATE VPN CONNECTIONS
     - name: create vpn connection 1
       ec2_vpn_connection:
         state: present
@@ -142,17 +163,21 @@
       register: vpn_conn_02
 
     # - debug: var=vpn_conn_01
+    #   tags:
+    #       - debug
     # - debug: var=vpn_conn_02
+    #   tags:
+    #       - debug
 
     - name: Persist vpn_conn_01 ID variable data to disk in yaml
       copy:
           content: "id: {{ vpn_conn_01.vpn_conn.id | to_nice_yaml }}"
-          dest: ../cache/{{env_tag}}/vpn_conn_01.yml
+          dest: ../cache/{{env_tag}}/vpn_conn_01_id.yml
 
     - name: Persist vpn_conn_01 ID variable data to disk in json
       copy:
           content: "{{ vpn_conn_01.vpn_conn.id | to_nice_json }}"
-          dest: ../cache/{{env_tag}}/vpn_conn_01.json
+          dest: ../cache/{{env_tag}}/vpn_conn_01_id.json
 
     - name: Persist vpn_conn_01 customer_gateway_configuration to disk in yaml
       copy:
@@ -162,19 +187,19 @@
     - name: Persist vpn_conn_02  ID variable data to disk in yaml
       copy:
           content: "id: {{ vpn_conn_02.vpn_conn.id | to_nice_yaml }}"
-          dest: ../cache/{{env_tag}}/vpn_conn_02.yml
+          dest: ../cache/{{env_tag}}/vpn_conn_02_id.yml
 
     - name: Persist vpn_conn_02 ID variable data to disk in json
       copy:
           content: "{{ vpn_conn_02.vpn_conn.id | to_nice_json }}"
-          dest: ../cache/{{env_tag}}/vpn_conn_02.json
+          dest: ../cache/{{env_tag}}/vpn_conn_02_id.json
 
     - name: Persist vpn_conn_02 customer_gateway_configuration to disk in yaml
       copy:
           content: "{{ vpn_conn_02.vpn_conn.customer_gateway_configuration }}"
           dest: ../cache/{{env_tag}}/vpn_conn_02_customer_gateway_configuration.xml
 
-    # Hmm, how to parse xml output in customer_gateway_configuration  
+    # Example how to parse xml output
     # https://github.com/cmprescott/ansible-xml/issues/14
 
     # - name: Convert XML to JSON

@@ -1,0 +1,144 @@
+
+# Change Passwords
+modify auth password root <will prompt> 
+modify auth user admin password <password>
+
+# License Devices
+modify sys global-settings hostname "bigip-vpn-01.mgmt.example.com"
+modify sys dns name-servers add { 10.11.26.1 }
+modify sys ntp servers add { "0.pool.ntp.org" }
+install sys license registration-key "XXXXXXXXXXXXXXXX"
+
+# Configure Global Settings
+modify sys global-settings gui-setup disabled
+modify sys db dhclient.mgmt { value "disable" }
+
+# Configure Network
+create net vlan internal interfaces add { 1.1 }
+create net vlan external interfaces add { 1.2 }
+
+create net self 208.85.211.57 address 208.85.211.57/28 traffic-group traffic-group-local-only vlan external
+create net self 10.12.0.57 address 10.12.0.57/16 allow-service default traffic-group traffic-group-local-only vlan external
+create net self 10.3.0.2 address 10.3.0.2/16 allow-service default traffic-group traffic-group-local-only vlan internal
+
+create net self 10.12.0.56 address 10.12.0.56/16 traffic-group traffic-group-1 vlan external
+create net self 10.3.0.1 address 10.3.0.1/16 allow-service default traffic-group traffic-group-1 vlan internal
+
+# Cluster Devices
+delete cm trust-domain all
+mv cm device bigip1 bigip-vpn-01.mgmt.example.com
+modify cm device bigip-vpn-01.mgmt.example.com configsync-ip 10.12.0.57 unicast-address { { effective-ip 10.12.0.57 effective-port 1026 ip 10.12.0.57 } } mirror-ip 10.12.0.57 mirror-secondary-ip 10.12.0.57
+
+From bigip-01:
+modify cm trust-domain Root ca-devices add { 10.11.50.22 } name bigip-vpn-02.mgmt.example.com username admin password "<password>"
+
+create cm device-group my_sync_failover_group type sync-failover devices add { bigip-vpn-01.mgmt.example.com bigip-vpn-02.mgmt.example.com } auto-sync enabled
+
+# Configure IPSEC Global Settings
+modify sys db config.allow.rfc3927 { value "enable" } 
+modify sys db ipsec.if.checkpolicy { value "disable" }
+# Optional 
+modify sys db connection.vlankeyed { value "disable" } 
+
+
+# Configure IKE Peers
+
+create net ipsec ike-peer aws_vpn_conn_1_peer_1 lifetime 480 my-id-type address peers-id-type address phase1-auth-method pre-shared-key phase1-encrypt-algorithm aes128 remote-address 52.24.244.82 verify-cert true version add { v1 } preshared-key <key>
+
+create net ipsec ike-peer aws_vpn_conn_1_peer_2 lifetime 480 my-id-type address peers-id-type address phase1-auth-method pre-shared-key phase1-encrypt-algorithm aes128 remote-address 52.25.19.43 verify-cert true version add { v1 } preshared-key <key> 
+
+# Configure IPSEC Policy
+
+create net ipsec ipsec-policy AWS_IPSEC_Interface_Policy ike-phase2-auth-algorithm sha1 ike-phase2-encrypt-algorithm aes128 ike-phase2-lifetime 60 ike-phase2-perfect-forward-secrecy modp1024 mode interface
+
+9. Configure IPSEC Selectors
+
+create net ipsec traffic-selector aws_conn_1_tun_1_selector destination-address 169.254.12.44/30 ipsec-policy AWS_IPSEC_Interface_Policy source-address 169.254.12.44/30
+create net ipsec traffic-selector aws_conn_1_tun_2_selector destination-address 169.254.12.28/30 ipsec-policy AWS_IPSEC_Interface_Policy source-address 169.254.12.28/30
+
+10. Configure IPSEC Profiles
+
+create net tunnels ipsec aws_conn_1_tun_1_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_1_tun_1_selector 
+create net tunnels ipsec aws_conn_1_tun_2_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_1_tun_2_selector 
+
+11. Configure Tunnels
+
+create net tunnels tunnel aws_conn_1_tun_1 local-address 208.85.211.57 mtu 1436 profile aws_conn_1_tun_1_profile remote-address 52.24.244.82
+create net tunnels tunnel aws_conn_1_tun_2 local-address 208.85.211.57 mtu 1436 profile aws_conn_1_tun_2_profile remote-address 52.25.19.43
+
+12. Configure Tunnel Self-IPs
+
+create net self 169.254.12.30 address 169.254.12.30/30 allow-service all traffic-group traffic-group-local-only vlan aws_conn_1_tun_2 
+create net self 169.254.12.46 address 169.254.12.46/30 allow-service all traffic-group traffic-group-local-only vlan aws_conn_1_tun_1 
+
+# Configure BGP
+
+Create a file named ZebOS.conf that looks like example_configs/cache/bigip-01_ZebOS.conf:
+
+!
+no service password-encryption
+!
+log file /var/log/zebos
+!
+!debug bgp
+!debug bgp nsm
+!debug bgp nht
+!debug bgp events
+!debug bgp keepalives
+!debug bgp updates
+!debug bgp fsm
+!debug bgp filters
+!debug bgp dampening
+!debug bgp bfd
+!
+router bgp 65000
+ bgp router-id 169.254.12.46
+ max-paths ebgp 8
+ bgp log-neighbor-changes
+ bgp graceful-restart restart-time 120
+ network 10.3.0.0/16
+ neighbor 169.254.12.45 remote-as 7224
+ neighbor 169.254.12.45 default-originate
+ neighbor 169.254.12.45 soft-reconfiguration inbound
+ neighbor 169.254.12.45 capability graceful-restart
+ ! neighbor 169.254.12.45 route-map prepend-tunnel-1 out
+ neighbor 169.254.12.29 remote-as 7224
+ neighbor 169.254.12.29 default-originate
+ neighbor 169.254.12.29 soft-reconfiguration inbound
+ neighbor 169.254.12.29 capability graceful-restart
+ ! neighbor 169.254.12.29 route-map prepend-tunnel-2 out
+ !
+route-map prepend-tunnel-1 permit 10
+ set as-path prepend 65000
+!
+route-map prepend-tunnel-2 permit 10
+ set as-path prepend 65000 65000
+!
+line con 0
+ login
+line vty 0 39
+ login
+!
+end
+
+Copy it to /config/zebos/rd0/ZebOS.conf
+
+Then run:
+modify net route-domain 0 routing-protocol add { BGP }
+
+# Configure Tunnel Keep Alive Pools
+
+create ltm pool aws_conn_1_keep_alive_pool members add { 169.254.12.29:179 { address 169.254.12.29 } 169.254.12.45:179 { address 169.254.12.45 } } monitor tcp_half_open and gateway_icmp
+
+
+#### Optional:
+
+# Configure Additional Traffic Groups only on cluster seed(bigip-01)
+create cm traffic-group traffic-group-2 auto-failback-enabled true ha-order { bigip-vpn-01.mgmt.example.com bigip-vpn-02.mgmt.example.com } 
+create cm traffic-group traffic-group-3 auto-failback-enabled true ha-order { bigip-vpn-02.mgmt.example.com bigip-vpn-01.mgmt.example.com } 
+
+
+# Configure HA Group
+create sys ha-group vpn_conn_1_up pools add { aws_conn_1_keep_alive_pool { threshold 1 weight 10 } } 
+# Configure to work on traffic-group-1
+cm traffic-group /Common/traffic-group-1 { ha-group vpn_conn_1_up }

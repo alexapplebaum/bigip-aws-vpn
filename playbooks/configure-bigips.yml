@@ -1,22 +1,19 @@
 
+############## BEGIN COLLECTING/SETTING VARIABLES ######
+
 - hosts: bigip-01
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   tasks:
 
     - name: Load customer_gateway_configuration from XML
       set_fact:
           customer_gateway_config: "{{ lookup('file', '../cache/' + env_tag + '/vpn_conn_01_customer_gateway_configuration.xml') | xml_to_dict }}"
           connection: "conn_1"
-         
 
 - hosts: bigip-02
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   tasks:
 
     - name: Load customer_gateway_configuration from XML
@@ -27,18 +24,14 @@
 - hosts: bigips
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   vars_files:
       - "~/creds.yml"
-      - [ "../inventory/host_vars/{{env_tag}}_vpc.yml" ]
-      - [ "../inventory/host_vars/{{env_tag}}_security_group.yml" ]
   pre_tasks:
 
     # - name: debug hosts before set fact
     #   debug: var=hostvars[inventory_hostname]
 
-      ##### CONVERT DATA FROM DIFFERNT SOURCES TO FIT ROLES #####
+      ##### IMPORT/CONVERT DATA FROM DIFFERNT SOURCES TO FIT ROLES #####
       # ex. massage the variables from static configs to better fit 
       # roles from github/f5networks/aws-deployments
     - name: 
@@ -47,6 +40,7 @@
         ansible_ssh_user={{ ansible_ssh_user }}
         bigip_rest_user={{ bigip_rest_user }}
         bigip_rest_password={{ bigip_rest_password }}
+        install_path={{install_path}}
         DeviceName={{ hostvars[inventory_hostname].SETTINGS.hostname }}
         ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
         ManagementInterfacePublicIp={{ hostvars[inventory_hostname].SETTINGS.bigip }}
@@ -55,10 +49,14 @@
         license_server="{{hostvars[inventory_hostname].SETTINGS.license_server_hostname}}"
         modules="{{hostvars[inventory_hostname].SYSTEM.PROVISIONING.keys() }}"
         db_keys="{{hostvars[inventory_hostname].SYSTEM.DB_KEYS}}"
+        ntp_server="{{hostvars[inventory_hostname].SYSTEM.NTP.ntp_servers[0]}}"
+        timezone="{{hostvars[inventory_hostname].SYSTEM.NTP.timezone}}"
+        dns_server="{{hostvars[inventory_hostname].SYSTEM.DNS.dns_servers[0]}}"
         vlans="{{hostvars[inventory_hostname].NETWORK.VLANS}}"
         self_ips="{{hostvars[inventory_hostname].NETWORK.SELF_IPS}}"
         routes="{{hostvars[inventory_hostname].NETWORK.ROUTES}}"
 
+    # Had to filter a bit more for varables below as there may be multiple Self-IPs that could match
     - name: set ExternalInterfacePrivateIp
       set_fact: 
         ExternalInterfacePrivateIp={{ item.address }}
@@ -72,16 +70,18 @@
       with_items: hostvars[inventory_hostname].NETWORK.SELF_IPS 
       when: item.tag is defined and item.tag == "InternalInterfacePrivateIp"
 
-    - name: debug hosts after set fact
-      debug: var=hostvars[inventory_hostname]
+    # - name: debug hosts after set fact
+    #   debug: var=hostvars[inventory_hostname]
 
-    # - name: debug db_keys
-    #   debug: var=hostvars[inventory_hostname].SYSTEM.DB_KEYS
+############## END COLLECTING/SETTING VARIABLES ######
 
-    # - name: debug db_keys from variable
-    #   debug: var=item
-    #   with_dict: db_keys
 
+
+
+
+############## BEGIN CONFIGURE BASE CONFIGS ##########
+
+# SSH to each device using ssh key, add a REST user and change the GUI admin password
 - hosts: bigips
   gather_facts: False
   roles:
@@ -90,21 +90,25 @@
     # starting with 11.6, AWS defaults to admin & tmsh as shell so need different role
     # - bigip_base_aws
 
+# Connection = local as rest calls from the automation host
 - hosts: bigips
   connection: local
   gather_facts: False
-  vars:
-    env_tag: dev_west_2
   roles:
-    # licenses bigip
+    # # licenses bigip
     - bigip_license
-    # provisions system globals like ntp, dns, snmp, syslog, db keys
+    # # provisions system globals like ntp, dns, snmp, syslog, db keys
     - bigip_system
     # sets vlans, self-ips, routes
     - bigip_network
 
+############## END CONFIGURE BASE CONFIGS ############
 
-############## CLUSTER DEVICES #############
+
+
+
+
+############## BEGIN CLUSTER THE DEVICES #############
 
 - hosts: bigip-cluster-names
   gather_facts: no
@@ -125,8 +129,6 @@
 - hosts: bigip-cluster-seeds
   gather_facts: no
   connection: local
-  vars:
-    env_tag: dev_west_2
   tasks:
 
       #- name: debug hosts
@@ -142,8 +144,6 @@
 # # Add peer variables to host from template output above
 - hosts: bigip-cluster-seeds
   gather_facts: no
-  vars:
-    env_tag: dev_west_2
   vars_files:
     - [ "../cache/{{ env_tag }}/{{inventory_hostname}}_peer_info.yml" ]
   roles:
@@ -152,31 +152,38 @@
 
 ######## END CLUSTER DEVICES ############
 
-######## ADD VPN SPECIFIC CONFIG ##########
+
+
+
+
+######## BEGIN VPN SPECIFIC CONFIG ##########
 
 - hosts: bigip-01
   gather_facts: no
-  vars:
-    env_tag: dev_west_2
   roles:
     - bigip_vpn
    
 - hosts: bigip-02
   gather_facts: no
-  vars:
-    env_tag: dev_west_2
   pre_tasks:
     - name: pause to allow time to sync shared vpn config elements
       pause: seconds=20
   roles:
     - bigip_vpn
 
-### MISC SHARED CONFIG
+######## END VPN SPECIFIC CONFIG ##########
+
+
+
+
+
+######## BEGIN MISC SHARED CONFIG ##########
+
+##### As Tunnels will only activate on an Active device, 
+##### We will add a couple more traffic groups in order to keep each device Active
 
 - hosts: bigip-cluster-seeds
   gather_facts: no
-  vars:
-    env_tag: dev_west_2
   tasks:
 
     - name: Adding Traffic Group 2 To Keep BIG-IP-1 ACTIVE
@@ -216,7 +223,7 @@
                   ]
                   }'
 
-    # OPTIONAL VIRTUAL FOR TESTING
+    # OPTIONAL OUTBOUND VIRTUAL FOR TESTING CLIENTS BEHIND BIG-IPs
     - name: Adding Forwarding Virtual
       delegate_to: localhost
       bigip_config:
@@ -238,7 +245,7 @@
                   "ipForward":true
                   }'
 
-
+######## END MISC SHARED CONFIG ##########
 
 
 

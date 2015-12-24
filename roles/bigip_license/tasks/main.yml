@@ -12,6 +12,7 @@
 
 
 # Example of setting license for license.f5.com in 12.0.0+ w/ REST
+# Assuming BIG-IPs have access to license server
 # - name: License BIG-IP for BYOL
 #   delegate_to: localhost
 #   bigip_config:
@@ -19,22 +20,22 @@
 #     host={{ inventory_hostname }}
 #     user={{ bigip_rest_user }}
 #     password={{ bigip_rest_pass }}
-#     payload='{"command":"install", "registrationKey":"{{RegKey}}"}'
+#     payload='{"command":"install", "registrationKey":"{{RegKey}}","licenseServer":"{{license_server}}"}'
 #     collection_path='mgmt/tm/sys/license'
 #
 
+# - name: License the bigip using old script
+#   script: ../library/bigip_license_bigsuds.py -b {{ansible_ssh_host}} -u \'{{bigip_rest_user}}\' -p \'{{bigip_rest_password}}\' -r \'{{RegKey}}\' -s {{license_server}}
+#   delegate_to: localhost
+
 - name: License the bigip using Ansible Module
-  bigip_license: connection="icontrol"
-                 hostname={{ ansible_ssh_host }}
-                 key={{ RegKey }}
-                 license_server={{ license_server }}
-                 username={{ bigip_rest_user }}
-                 password={{ bigip_rest_password }}
-                 wsdl=/Users/applebaum/shared/git/my-repos/ansible/aws-vpn/roles/bigip_license/files/authem.f5net.com-f5wsdl-w-https.xml
+  bigip_license: 
+     server={{ ansible_ssh_host }}
+     username={{ bigip_rest_user }}
+     password={{ bigip_rest_password }}
+     key={{ RegKey }}
+     validate_certs=False
   delegate_to: localhost
 
-#- name: License the bigip using old script
-#  script: ../library/bigip_license_bigsuds.py -b {{inventory_hostname}} -u \'{{bigip_rest_user}}\' -p \'{{bigip_rest_pass}}\' -r \'{{RegKey}}\' -s {{license_server}}
-#  delegate_to: localhost
 
 

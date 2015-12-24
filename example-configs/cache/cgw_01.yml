@@ -1,0 +1,22 @@
+ansible_facts:
+    ec2_customer_gateway: info
+cgw:
+    bgp_asn: 65000
+    id: cgw-4a875954
+    ip_address: 208.85.211.57
+    status: ok
+    type: ipsec.1
+changed: false
+invocation:
+    module_args: ''
+    module_name: ec2_customer_gateway
+item:
+    address: 208.85.211.57
+    allow_service: ''
+    cidr: '28'
+    customer_gateway: true
+    name: 208.85.211.57
+    netmask: 255.255.255.240
+    port_custom_add: TCP:179,UDP:53
+    traffic_group: traffic-group-local-only
+    vlan: external

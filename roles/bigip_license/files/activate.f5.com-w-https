@@ -18,24 +18,24 @@
     <part name="postalCode" type="xsd:string"/>
     <part name="country" type="xsd:string"/>
   </message>
+  <message name="pingRequest">
+  </message>
   <message name="getLicenseResponse">
     <part name="return" type="tns1:LicenseTransaction"/>
   </message>
-  <message name="pingRequest">
-  </message>
   <portType name="ActivationServiceProxy">
-    <operation name="getLicense" parameterOrder="dossier eula email firstName lastName companyName phone jobTitle address city stateProvince postalCode country">
-      <input message="intf:getLicenseRequest"/>
-      <output message="intf:getLicenseResponse"/>
-    </operation>
     <operation name="ping">
       <input message="intf:pingRequest"/>
       <output message="intf:pingResponse"/>
     </operation>
+    <operation name="getLicense" parameterOrder="dossier eula email firstName lastName companyName phone jobTitle address city stateProvince postalCode country">
+      <input message="intf:getLicenseRequest"/>
+      <output message="intf:getLicenseResponse"/>
+    </operation>
   </portType>
   <binding name="urn:com.f5.license.v5b.ActivationServiceSoapBinding" type="intf:ActivationServiceProxy">
     <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
-    <operation name="getLicense">
+    <operation name="ping">
       <wsdlsoap:operation soapAction=""/>
       <input>
         <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
@@ -44,7 +44,7 @@
         <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
       </output>
     </operation>
-    <operation name="ping">
+    <operation name="getLicense">
       <wsdlsoap:operation soapAction=""/>
       <input>
         <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="https://activate.f5.com/license/services/urn:com.f5.license.v5b.ActivationService" use="encoded"/>
