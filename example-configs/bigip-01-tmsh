@@ -1,8 +1,8 @@
 
 
 # Change Passwords
-modify auth password root <will prompt> 
-modify auth user admin password <password>
+modify auth password root <it will prompt you> 
+modify auth user admin password <your password>
 
 # License Devices
 modify sys global-settings hostname "bigip-vpn-01.mgmt.example.com"
@@ -29,14 +29,16 @@ create net self 10.3.0.2 address 10.3.0.2/16 allow-service default traffic-group
 create net self 10.12.0.56 address 10.12.0.56/16 traffic-group traffic-group-1 vlan external
 create net self 10.3.0.1 address 10.3.0.1/16 allow-service default traffic-group traffic-group-1 vlan internal
 
-
+#Forwarding Virtual Server
+create ltm profile fastL4 fastL4-test loose-close enabled loose-initialization enabled reset-on-timeout disabled
+create ltm virtual vs_outbound destination 0.0.0.0:any ip-forward profiles add { fastL4-route-friendly }
 
 # Cluster Devices
 delete cm trust-domain all
 mv cm device bigip1 bigip-vpn-01.mgmt.example.com
 modify cm device bigip-vpn-01.mgmt.example.com configsync-ip 10.12.0.57 unicast-address { { effective-ip 10.12.0.57 effective-port 1026 ip 10.12.0.57 } } mirror-ip 10.12.0.57 mirror-secondary-ip 10.12.0.57
 
-#### NOTE: Make sure Peer has steps above completed before proceeding
+#### NOTE: Make sure peer has steps above completed before proceeding with clustering (see bigip-02-tmsh file)
 
 #### BEGIN Only from Cluster Seed (bigip-01) ####
 
@@ -44,9 +46,13 @@ modify cm trust-domain Root ca-devices add { 10.11.50.22 } name bigip-vpn-02.mgm
 
 create cm device-group my_sync_failover_group type sync-failover devices add { bigip-vpn-01.mgmt.example.com bigip-vpn-02.mgmt.example.com } auto-sync enabled
 
+# Sync to Manually one time to confirm
+run cm config-sync to-group my_sync_failover_group
+
 # Configure Additional Traffic Groups only on cluster seed(bigip-01)
 create cm traffic-group traffic-group-2 auto-failback-enabled true ha-order { bigip-vpn-01.mgmt.example.com bigip-vpn-02.mgmt.example.com } 
 create cm traffic-group traffic-group-3 auto-failback-enabled true ha-order { bigip-vpn-02.mgmt.example.com bigip-vpn-01.mgmt.example.com } 
+
 
 #### END Only from Cluster Seed (bigip-01) ####
 
@@ -72,8 +78,8 @@ create net ipsec traffic-selector aws_conn_1_tun_1_selector destination-address 
 create net ipsec traffic-selector aws_conn_1_tun_2_selector destination-address 169.254.12.28/30 ipsec-policy AWS_IPSEC_Interface_Policy source-address 169.254.12.28/30
 
 # Configure IPSEC Profiles
-create net tunnels ipsec aws_conn_1_tun_1_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_1_tun_1_selector 
-create net tunnels ipsec aws_conn_1_tun_2_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_1_tun_2_selector 
+create net tunnels ipsec aws_conn_1_tun_1_profile app-service none defaults-from ipsec traffic-selector aws_conn_1_tun_1_selector 
+create net tunnels ipsec aws_conn_1_tun_2_profile app-service none defaults-from ipsec traffic-selector aws_conn_1_tun_2_selector 
 
 # Configure Tunnels
 create net tunnels tunnel aws_conn_1_tun_1 local-address 208.85.211.57 mtu 1436 profile aws_conn_1_tun_1_profile remote-address 52.24.244.82
@@ -144,7 +150,7 @@ end
 # Enable BGP
 modify net route-domain 0 routing-protocol add { BGP }
 
-#### Optional:
+#### Optional but Recommended:
 
 # Configure HA Group
 create sys ha-group vpn_conn_1_up pools add { aws_conn_1_keep_alive_pool { threshold 1 weight 10 } } 

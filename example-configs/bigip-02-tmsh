@@ -1,8 +1,8 @@
 
 
 # Change Passwords
-modify auth password root <will prompt> 
-modify auth user admin password <password>
+modify auth password root <it will prompt you> 
+modify auth user admin password <your password>
 
 # License Devices
 modify sys global-settings hostname "bigip-vpn-02.mgmt.example.com"
@@ -60,8 +60,8 @@ create net ipsec traffic-selector aws_conn_2_tun_1_selector { destination-addres
 create net ipsec traffic-selector aws_conn_2_tun_2_selector { destination-address 169.254.12.76/30 ipsec-policy AWS_IPSEC_Interface_Policy source-address 169.254.12.76/30 }
 
 # Configure IPSEC Profiles
-create net tunnels ipsec aws_conn_2_tun_1_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_2_tun_1_selector 
-create net tunnels ipsec aws_conn_2_tun_2_profile app-service none defaults-from ipsec traffic-selector /Common/aws_conn_2_tun_2_selector 
+create net tunnels ipsec aws_conn_2_tun_1_profile app-service none defaults-from ipsec traffic-selector aws_conn_2_tun_1_selector 
+create net tunnels ipsec aws_conn_2_tun_2_profile app-service none defaults-from ipsec traffic-selector aws_conn_2_tun_2_selector 
 
 # Configure Tunnels
 create net tunnels tunnel aws_conn_2_tun_1 local-address 208.85.211.58 mtu 1436 profile aws_conn_2_tun_1_profile remote-address 52.25.240.97
@@ -112,10 +112,10 @@ router bgp 65000
  ! neighbor 169.254.12.77 route-map prepend-tunnel-2 out
  !
 route-map prepend-tunnel-1 permit 10
- set as-path prepend 65000
+ set as-path prepend 65000 65000 65000
 !
 route-map prepend-tunnel-2 permit 10
- set as-path prepend 65000 65000
+ set as-path prepend 65000 65000 65000 65000
 !
 line con 0
  login
@@ -132,7 +132,7 @@ end
 modify net route-domain 0 routing-protocol add { BGP }
 
 
-# OPTIONAL 
+#### Optional but Recommended:
 
 # Configure HA Group
 create sys ha-group vpn_conn_2_up pools add { aws_conn_2_keep_alive_pool { threshold 1 weight 10 } } 
