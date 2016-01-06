@@ -29,7 +29,8 @@ create net self 10.3.0.3 address 10.3.0.3/16 allow-service default traffic-group
 create net self 10.12.0.56 address 10.12.0.56/16 traffic-group traffic-group-1 vlan external
 create net self 10.3.0.1 address 10.3.0.1/16 allow-service default traffic-group traffic-group-1 vlan internal
 
-
+# Create Default Route
+create net route default gw 10.12.255.254
 
 # Cluster Devices
 delete cm trust-domain all
